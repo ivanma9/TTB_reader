@@ -1,0 +1,34 @@
+[project]
+name = "alc-label-verifier"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = [
+    "Pillow>=10.0.0",
+    "rapidfuzz>=3.0.0",
+]
+
+[project.optional-dependencies]
+# paddlepaddle wheels are Linux x86_64 only (no macOS arm64 on PyPI).
+# Container path (linux/amd64): pip install paddlepaddle then paddleocr.
+# Constrain to 2.x API; PaddleOCR 3.x changed the initialization interface.
+ocr = [
+    "paddleocr>=2.7.0,<3.0.0",
+]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["alc_label_verifier*", "evals*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: requires PaddleOCR and fixture images",
+]
