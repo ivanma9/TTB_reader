@@ -106,4 +106,62 @@ or `"Imported from France"` — the anchor doesn't match these variants.
 
 ---
 
+## Post-Category-A update (2026-04-17)
+
+The Category A fixes (`net_contents` unit aliases + OCR-typo tolerance,
+`brand_name` fuzzy-contains over wider pool, `country_of_origin` widened
+to the full non-warning region) shipped on branch `real-label-category-a`.
+New per-field counts (43 cases, 17 imports / 26 domestic):
+
+| Field | match | mismatch | needs_review | not_applicable |
+|-------|------:|---------:|-------------:|---------------:|
+| brand_name | **22** | 9 | 12 | 0 |
+| net_contents | **22** | 0 | 21 | 0 |
+| country_of_origin | **3** | 9 | 10 | 21 |
+| alcohol_content | 31 | 1 | 11 | 0 |
+| class_type | 1 | 23 | 19 | 0 |
+| producer_name_address | 0 | 25 | 18 | 0 |
+| government_warning | 0 | 4 | 39 | 0 |
+
+### Residual `country_of_origin` gaps (9 imports still `missing_required`)
+
+**A' — anchor-prefix limitation (fixable in a follow-up, not shipped here):**
+- `ttb_18011001000033` (Peru) — front has
+  "Producto peruano/Product of Peru", but `_find_country_anchor` only
+  checks the line's leading chars. Scan-anywhere (word-boundary guarded)
+  would unlock this case. Tracked as follow-up.
+
+**E — country name embedded without a standard anchor phrase:**
+- `ttb_18250001000290` (Greece) — "GREECE" appears inside
+  "DISTILLERY-TYRNAVOS-GREECE". No "product of / made in / imported from"
+  phrase.
+- `ttb_18095001001312` (Mexico) — "MEXICO" embedded in
+  "JALISCOMEXICO"; only addresses mention it.
+- `ttb_18199001000406` — country name reachable only via typo'd OCR with
+  no standard anchor.
+
+**F — foreign-language anchor (vocabulary gap):**
+- `ttb_18074001000816` (Mexico) — "Hecho en Tequila, Mexicc." Spanish
+  anchor + OCR typo; would require extending `COUNTRY_ANCHORS` with
+  "hecho en" and handling the city/country comma pattern.
+
+**C — country genuinely absent from front-label OCR (back label required,
+deferred to Category B, see
+`docs/plans/2026-04-17-real-label-category-b.md`):**
+- `ttb_18113001000679` (Japan) — front has 4 OCR lines; no country.
+- `ttb_18046001000056`, `ttb_18291001000107`, `ttb_18043001000147`
+  (France) — Cognac/Armagnac front labels never say "France".
+
+### Ship criteria met
+
+Plan targets (`docs/plans/2026-04-17-real-label-category-a.md`):
+- `net_contents` ≥ 20/43 → **22/43** ✓
+- `brand_name` ≥ 20/43 → **22/43** ✓
+- `country_of_origin` ≥ 3/25* → **3/17 imports** ✓
+
+*Plan target "3/25" was a pre-eval estimate; the built eval set has 17
+imports + 26 domestic = 43 cases.
+
+---
+
 Per-case details: `docs/real-label-gaps.csv`

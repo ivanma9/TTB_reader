@@ -41,10 +41,16 @@ def normalize_text(text: str) -> str:
 _ABV_RE = re.compile(r"(\d+(?:\.\d+)?)\s*%")
 _PROOF_RE = re.compile(r"\(?\s*(\d+(?:\.\d+)?)\s*(?:proof|PROOF)\s*\)?", re.IGNORECASE)
 
-# Require a word boundary before the number to avoid matching digits inside other tokens.
-# Bare 'l'/'L' is excluded: only 'mL', 'ML', 'ml' and 'L' (uppercase alone) are safe.
-_NET_RE = re.compile(
-    r"\b(\d+(?:\.\d+)?)\s*(fl\.?\s*oz|oz|mL|ML|ml|L)\b",
+# Two-regex split so the bare single-char units ('L', 'mL', 'm1' and friends)
+# stay case-SENSITIVE — bare lowercase 'l' in prose would otherwise fire on
+# OCR misreads of 'I'/'1'. The long/word forms stay case-insensitive because
+# 'MILLILITERS'/'Liters' are unambiguous regardless of case.
+_NET_SHORT_RE = re.compile(
+    r"\b(\d+(?:\.\d+)?)\s*(mL|ML|ml|L|m1|M1)\b"
+)
+_NET_LONG_RE = re.compile(
+    r"\b(\d+(?:\.\d+)?)\s*"
+    r"(fl\.?\s*oz|fluid\s+ounces?|ounces?|oz|milliliters?|liters?)\b",
     re.IGNORECASE,
 )
 
@@ -63,18 +69,36 @@ def parse_alcohol(text: str) -> Optional[Tuple[float, Optional[float]]]:
 def parse_net_contents(text: str) -> Optional[Tuple[float, str]]:
     """Return (quantity_ml_or_oz, unit_string) or None if not parseable.
 
-    Normalises L → mL so '1 L' == '1000 mL'.
+    Normalises to two canonical units: 'ml' (with L → mL conversion) or 'oz'.
+    Accepts both symbol forms (mL, L, oz) and English words (milliliters,
+    liters, fluid ounces) — the CSV ground truth uses spelled-out forms while
+    real labels use symbol forms. Single-char/alias units (bare 'L', 'm1') are
+    range-checked to plausible bottle sizes so serial numbers and product
+    codes like 'serial 12345L' or 'lot 1m1-batch' don't false-fire.
     """
-    m = _NET_RE.search(text)
-    if not m:
+    # On dual-unit labels ('12 fl oz (355 mL)' or '750 mL (25.4 fl oz)') prefer
+    # whichever unit appears first — the primary declared unit by convention.
+    candidates = [m for m in (_NET_SHORT_RE.search(text), _NET_LONG_RE.search(text)) if m]
+    if not candidates:
         return None
+    m = min(candidates, key=lambda mm: mm.start())
     qty = float(m.group(1))
     unit_raw = m.group(2).lower().replace(" ", "").replace(".", "")
-    if unit_raw == "l":
+    if unit_raw in ("l", "liter", "liters"):
+        # Bare 'L' matches anywhere a digit is followed by an upper-case L,
+        # including serial numbers. Real packaging is 0.1–10 L.
+        if unit_raw == "l" and not (0.1 <= qty <= 10):
+            return None
         return (qty * 1000, "ml")
-    if unit_raw.startswith("fl") or unit_raw == "oz":
+    if unit_raw.startswith("fl") or unit_raw in ("oz", "ounce", "ounces", "fluidounce", "fluidounces"):
         return (qty, "oz")
-    return (qty, "ml")
+    if unit_raw in ("m1", "ml", "milliliter", "milliliters"):
+        # 'm1'/'M1' is only plausible for real bottle sizes (≥ 50 mL); reject
+        # small-qty matches that would otherwise fire on product codes.
+        if unit_raw == "m1" and qty < 50:
+            return None
+        return (qty, "ml")
+    return None
 
 
 def _alcohol_values_match(a: Tuple[float, Optional[float]], b: Tuple[float, Optional[float]]) -> bool:
@@ -183,33 +207,113 @@ def _split_class_and_lower(
 
 
 def match_brand_name(lines: List[OcrLine], expected: str) -> FieldResult:
-    """Brand: best-matching line or multi-line concatenation from the top 3 OCR lines.
+    """Brand: widen the candidate window and prefer fuzzy-contains against expected.
 
-    Scanning the top 3 (rather than blindly taking lines[0]) handles rare
-    cases where a decoration or border artifact is detected above the brand text.
-    Multi-line concatenation handles brands that span two OCR lines.
+    Real labels frequently show the class word ("CACHACA") or region
+    ("OREGON") in the largest font, with the brand rendered smaller further
+    down. A partial_ratio score over the top-6 lines lets us pick the line
+    that *contains* the expected brand even when embedded in noise (e.g.
+    "BUCCO 1925") or positioned below a louder header. Falls back to the
+    prior top-3 concatenation + token_sort_ratio when no single line contains
+    the full expected string — preserves the multi-line brand case
+    (e.g. "OLD TOM" / "DISTILLERY").
     """
     if not lines:
         return FieldResult(status="needs_review", reason_code="unreadable")
 
     norm_exp = normalize_text(expected)
-    candidates = lines[:min(3, len(lines))]
+    exp_tokens = norm_exp.split()
+    pool = lines[: min(6, len(lines))]
 
-    # Build single-line and multi-line concatenation candidates
-    combined_candidates = [
-        (" ".join(l.text for l in candidates[:n]), min(l.confidence for l in candidates[:n]))
+    # A single line can only CONTAIN the expected brand if it's roughly the
+    # same length or longer. Allow a 4-char shortfall to absorb OCR typos
+    # that drop a character ('Darros' vs 'Darroze') or lose a space
+    # ('DANO\'SDANGEROUS' vs 'Dano\'s Dangerous'). The floor of 3 guards
+    # short expected brands (e.g. 'Bucco', '601') — without it, partial_ratio
+    # on 1–2 char fragments false-fires by symmetry.
+    min_line_len = max(3, len(norm_exp) - 4)
+    containing = [
+        (line, fuzz.partial_ratio(normalize_text(line.text), norm_exp))
+        for line in pool
+        if len(normalize_text(line.text)) >= min_line_len
+    ]
+    containing.sort(key=lambda ls: (ls[1], ls[0].confidence), reverse=True)
+
+    if containing and containing[0][1] >= 80:
+        best_line = containing[0][0]
+        # Anti-false-match guard: when expected has ≥2 tokens, require each
+        # expected token to fuzzy-appear in the line. Without this, expected
+        # "OLD FOX DISTILLERY" would silently match OCR "OLD TOM DISTILLERY"
+        # (partial_ratio ≈ 89) because matching prefix+suffix dominate the
+        # score — hiding a genuine brand-swap mismatch from reviewers. The
+        # per-token check catches the FOX→TOM swap because "fox" fuzzy-matches
+        # no token in the line.
+        line_tokens = normalize_text(best_line.text).split()
+        all_tokens_present = len(exp_tokens) < 2 or all(
+            max(
+                (fuzz.partial_ratio(tok, lt) for lt in line_tokens),
+                default=0,
+            ) >= 75
+            for tok in exp_tokens
+        )
+        if all_tokens_present:
+            if best_line.confidence < STANDARD_CONFIDENCE_THRESHOLD:
+                return FieldResult(status="needs_review", reason_code="unreadable")
+            # partial_ratio already confirmed the brand is inside the line;
+            # _compare_text would reject because token_sort_ratio penalises
+            # the extra tokens. Short-circuit to a match.
+            obs = best_line.text.strip() or None
+            return FieldResult(status="match", reason_code="normalized_match", observed_value=obs)
+
+    # Fallback 1: top-3 concatenation scored by token_sort_ratio — handles the
+    # multi-line-brand case where the expected string spans two adjacent lines
+    # (e.g. 'THE' / 'ORIGINAL').
+    candidates = lines[: min(3, len(lines))]
+    combined = [
+        (" ".join(l.text for l in candidates[:n]),
+         min(l.confidence for l in candidates[:n]))
         for n in range(1, len(candidates) + 1)
     ]
-
     best_text, best_conf = max(
-        combined_candidates,
+        combined,
         key=lambda tc: fuzz.token_sort_ratio(normalize_text(tc[0]), norm_exp),
     )
-
     if best_conf < STANDARD_CONFIDENCE_THRESHOLD:
         return FieldResult(status="needs_review", reason_code="unreadable")
+    prefix_result = _compare_text(best_text, expected, best_conf, use_fuzzy=True)
+    if prefix_result.status == "match":
+        return prefix_result
 
-    return _compare_text(best_text, expected, best_conf, use_fuzzy=True)
+    # Fallback 2: token_set_ratio over just the lines that contain at least
+    # one expected token as a whole word — handles brands whose tokens are
+    # scattered across non-adjacent lines in the top-6 ('ROCK' at line 1 and
+    # 'TOWN' at line 4 for expected 'Rock Town'). Whole-word matching
+    # prevents substring coincidences (e.g. 'Hill' in 'Kentucky Hills') from
+    # pulling unrelated lines into the contrib_text and blowing past the 95
+    # token_set_ratio gate.
+    scatter_tokens = [t for t in exp_tokens if len(t) >= 2]
+    if scatter_tokens:
+        contributing = [
+            l for l in pool
+            if any(
+                tok in normalize_text(l.text).split()
+                for tok in scatter_tokens
+            )
+        ]
+        if contributing:
+            contrib_text = " ".join(l.text for l in contributing)
+            contrib_conf = min(l.confidence for l in contributing)
+            if (
+                fuzz.token_set_ratio(normalize_text(contrib_text), norm_exp) >= 95
+                and contrib_conf >= STANDARD_CONFIDENCE_THRESHOLD
+            ):
+                return FieldResult(
+                    status="match",
+                    reason_code="normalized_match",
+                    observed_value=contrib_text.strip() or None,
+                )
+
+    return prefix_result
 
 
 def match_class_type(class_lines: List[OcrLine], expected: str) -> FieldResult:
@@ -399,22 +503,29 @@ def _extract_country_value(raw: str, anchor: str, expected: Optional[str]) -> st
 
 
 def match_country_of_origin(
-    lower_lines: List[OcrLine],
+    region_lines: List[OcrLine],
     expected: Optional[str],
     is_import: bool,
 ) -> FieldResult:
-    """Country of origin: conditional rules."""
+    """Country of origin: conditional rules.
+
+    Searches ``region_lines`` for a country-anchor phrase. Callers should pass
+    the full non-warning label region (class + brand + alcohol + lower) so
+    anchors that appear above the ABV line — e.g. "PRODUCT OF BRAZIL" on a
+    cachaça label where the region phrase sits under the fanciful name —
+    aren't silently filtered out.
+    """
     if not is_import:
         return FieldResult(status="not_applicable", reason_code="not_applicable")
 
     candidates: List[tuple[OcrLine, str]] = []
-    for line in lower_lines:
+    for line in region_lines:
         anchor = _find_country_anchor(line.text)
         if anchor:
             candidates.append((line, anchor))
 
     if not candidates:
-        if not lower_lines or _region_confidence(lower_lines) < STANDARD_CONFIDENCE_THRESHOLD:
+        if not region_lines or _region_confidence(region_lines) < STANDARD_CONFIDENCE_THRESHOLD:
             return FieldResult(status="needs_review", reason_code="unreadable")
         return FieldResult(status="mismatch", reason_code="missing_required")
 

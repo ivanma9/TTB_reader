@@ -191,3 +191,108 @@ def test_match_country_of_origin_rejects_made_inside_false_positive():
     result = match_country_of_origin(lines, "Scotland", is_import=True)
     assert result.status == "mismatch"
     assert result.reason_code == "missing_required"
+
+
+def test_parse_net_contents_accepts_milliliters_spelled_out():
+    assert parse_net_contents("750 milliliters") == (750.0, "ml")
+
+
+def test_parse_net_contents_accepts_liter_spelled_out():
+    assert parse_net_contents("1 liter") == (1000.0, "ml")
+    assert parse_net_contents("1.75 liters") == (1750.0, "ml")
+
+
+def test_parse_net_contents_accepts_fluid_ounces_spelled_out():
+    assert parse_net_contents("25.4 fluid ounces") == (25.4, "oz")
+
+
+def test_parse_net_contents_tolerates_l_read_as_digit_one():
+    # OCR frequently reads 'L' as '1' on label typography.
+    assert parse_net_contents("CONT.750m1") == (750.0, "ml")
+    assert parse_net_contents("750 M1") == (750.0, "ml")
+
+
+def test_parse_net_contents_rejects_bare_lowercase_l():
+    # Bare lowercase 'l' in prose is ambiguous with letter 'l' / OCR'd '1';
+    # only 'L' uppercase (or spelled-out 'liters') counts as the unit.
+    assert parse_net_contents("contains 1 l today") is None
+
+
+def test_parse_net_contents_rejects_implausible_bare_L_quantity():
+    # 'serial 12345L' must not parse as 12,345 liters.
+    assert parse_net_contents("serial 12345L") is None
+
+
+def test_parse_net_contents_rejects_m1_in_product_code():
+    # '1m1' in batch/lot codes must not parse as 1 mL.
+    assert parse_net_contents("lot 1m1-batch") is None
+
+
+def test_parse_net_contents_ignores_abv_percent():
+    # '40%' is alcohol, not net contents.
+    assert parse_net_contents("Alc. 40% by volume") is None
+
+
+def test_parse_net_contents_dual_unit_label_picks_primary():
+    # US-style domestic labels lead with fl oz; EU imports lead with mL.
+    assert parse_net_contents("12 fl oz (355 mL)") == (12.0, "oz")
+    assert parse_net_contents("750 mL (25.4 fl oz)") == (750.0, "ml")
+
+
+def test_match_brand_name_finds_brand_below_class_word():
+    lines = [
+        OcrLine(text="CACHACA", confidence=0.99, bbox=[], y_center=0, x_center=0),
+        OcrLine(text="PRODUCT OF BRAZIL", confidence=0.99, bbox=[], y_center=1, x_center=0),
+        OcrLine(text="BUCCO", confidence=0.95, bbox=[], y_center=2, x_center=0),
+        OcrLine(text="DESDE 1925", confidence=0.99, bbox=[], y_center=3, x_center=0),
+    ]
+    result = match_brand_name(lines, "Bucco")
+    assert result.status == "match"
+
+
+def test_match_brand_name_finds_brand_inside_noisy_line():
+    # "OREGON" is a prominent region word; "Old Tom" is the brand embedded in
+    # a longer line.
+    lines = [
+        OcrLine(text="OREGON", confidence=0.99, bbox=[], y_center=0, x_center=0),
+        OcrLine(text="Old Tom Gin", confidence=0.95, bbox=[], y_center=1, x_center=0),
+    ]
+    result = match_brand_name(lines, "Old Tom")
+    assert result.status == "match"
+
+
+def test_match_brand_name_finds_brand_tokens_scattered_across_lines():
+    # Real-label pattern: 'ROCK' and 'TOWN' separated by header junk.
+    lines = [
+        OcrLine(text="BATCH", confidence=0.99, bbox=[], y_center=0, x_center=0),
+        OcrLine(text="ROCK", confidence=0.99, bbox=[], y_center=1, x_center=0),
+        OcrLine(text="EST.D", confidence=0.99, bbox=[], y_center=2, x_center=0),
+        OcrLine(text="2010", confidence=1.00, bbox=[], y_center=3, x_center=0),
+        OcrLine(text="TOWN", confidence=1.00, bbox=[], y_center=4, x_center=0),
+        OcrLine(text="ARKANSAS", confidence=0.99, bbox=[], y_center=5, x_center=0),
+    ]
+    result = match_brand_name(lines, "Rock Town")
+    assert result.status == "match"
+
+
+def test_match_brand_name_typo_in_near_length_line():
+    # OCR drops a char: 'Darros' vs expected 'Darroze'. Length filter must
+    # allow a small shortfall so near-length typos still land.
+    lines = [
+        OcrLine(text="BAS-ARMAGNAC", confidence=0.99, bbox=[], y_center=0, x_center=0),
+        OcrLine(text="Darros", confidence=0.87, bbox=[], y_center=1, x_center=0),
+    ]
+    result = match_brand_name(lines, "Darroze")
+    assert result.status == "match"
+
+
+def test_match_brand_name_rejects_wrong_multi_token_brand():
+    # Expected 'OLD FOX DISTILLERY' vs OCR 'OLD TOM DISTILLERY'. partial_ratio
+    # scores ~89 because prefix+suffix match, but the middle token is wrong.
+    # The per-token guard must reject this — otherwise wrong-SKU labels would
+    # silently pass as match.
+    lines = [
+        OcrLine(text="OLD TOM DISTILLERY", confidence=0.95, bbox=[], y_center=0, x_center=0),
+    ]
+    result = match_brand_name(lines, "OLD FOX DISTILLERY")
+    assert result.status == "mismatch"
