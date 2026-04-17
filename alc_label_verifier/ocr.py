@@ -142,5 +142,10 @@ def extract_lines(image_path: str) -> List[OcrLine]:
     return lines
 
 
+def warm_ocr() -> None:
+    """Force OCR initialization so it is ready before the first request."""
+    _get_ocr()
+
+
 def build_full_text(lines: List[OcrLine]) -> str:
     return " ".join(l.text for l in lines)

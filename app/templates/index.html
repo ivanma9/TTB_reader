@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compliance Auditor — Reviewer Workstation</title>
+  <link rel="stylesheet" href="/static/workbench.css" />
+</head>
+<body>
+
+<!-- App header -->
+<header class="app-header">
+  <span class="app-icon">⚖</span>
+  <span class="app-title">Compliance Auditor</span>
+</header>
+
+<main>
+
+  <!-- Page heading + scope badge -->
+  <section>
+    <h1 class="page-heading">Reviewer Workstation</h1>
+    <span class="scope-badge">Distilled Spirits</span>
+  </section>
+
+  <form method="post" action="/verify" enctype="multipart/form-data" id="verify-form" novalidate>
+
+    <!-- Label Image card -->
+    <div class="card">
+      <p class="card-section-label">Label Image</p>
+      <div class="upload-area" id="upload-area">
+        <input type="file" name="label_image" id="label_image" accept="image/*" required />
+        <span class="upload-icon">📷</span>
+        <p class="upload-label">Click to upload a label image (max 20 MB)</p>
+        <p class="upload-filename" id="upload-filename"></p>
+      </div>
+      {% if errors.label_image %}
+        <span class="field-error">{{ errors.label_image }}</span>
+      {% endif %}
+    </div>
+
+    <!-- Expected Values card -->
+    <div class="card">
+      <p class="card-section-label">Expected Application Data</p>
+      <div class="field-group">
+
+        <div>
+          <label class="field-label" for="brand_name">Brand Name</label>
+          <input class="field-input {% if errors.brand_name %}is-invalid{% endif %}"
+                 type="text" id="brand_name" name="brand_name"
+                 value="{{ form_values.brand_name or '' }}" />
+          {% if errors.brand_name %}
+            <span class="field-error">{{ errors.brand_name }}</span>
+          {% endif %}
+        </div>
+
+        <div class="field-row">
+          <div>
+            <label class="field-label" for="class_type">Class / Type</label>
+            <input class="field-input {% if errors.class_type %}is-invalid{% endif %}"
+                   type="text" id="class_type" name="class_type"
+                   value="{{ form_values.class_type or '' }}" />
+            {% if errors.class_type %}
+              <span class="field-error">{{ errors.class_type }}</span>
+            {% endif %}
+          </div>
+          <div>
+            <label class="field-label" for="alcohol_content">Alcohol Content</label>
+            <input class="field-input {% if errors.alcohol_content %}is-invalid{% endif %}"
+                   type="text" id="alcohol_content" name="alcohol_content"
+                   value="{{ form_values.alcohol_content or '' }}"
+                   placeholder="e.g. 40% Alc./Vol. (80 Proof)" />
+            {% if errors.alcohol_content %}
+              <span class="field-error">{{ errors.alcohol_content }}</span>
+            {% endif %}
+          </div>
+        </div>
+
+        <div>
+          <label class="field-label" for="net_contents">Net Contents</label>
+          <input class="field-input {% if errors.net_contents %}is-invalid{% endif %}"
+                 type="text" id="net_contents" name="net_contents"
+                 value="{{ form_values.net_contents or '' }}"
+                 placeholder="e.g. 750 mL" />
+          {% if errors.net_contents %}
+            <span class="field-error">{{ errors.net_contents }}</span>
+          {% endif %}
+        </div>
+
+        <div>
+          <label class="field-label" for="producer_name_address">Producer / Address</label>
+          <input class="field-input {% if errors.producer_name_address %}is-invalid{% endif %}"
+                 type="text" id="producer_name_address" name="producer_name_address"
+                 value="{{ form_values.producer_name_address or '' }}" />
+          {% if errors.producer_name_address %}
+            <span class="field-error">{{ errors.producer_name_address }}</span>
+          {% endif %}
+        </div>
+
+        <!-- Import toggle -->
+        <div>
+          <label class="checkbox-row">
+            <input type="checkbox" id="is_import" name="is_import" value="1"
+                   {% if form_values.is_import %}checked{% endif %}
+                   onchange="toggleImport(this.checked)" />
+            <span class="checkbox-label">Imported product</span>
+          </label>
+        </div>
+
+        <div class="country-field {% if form_values.is_import %}visible{% endif %}" id="country-field">
+          <label class="field-label" for="country_of_origin">Country of Origin</label>
+          <input class="field-input {% if errors.country_of_origin %}is-invalid{% endif %}"
+                 type="text" id="country_of_origin" name="country_of_origin"
+                 value="{{ form_values.country_of_origin or '' }}" />
+          {% if errors.country_of_origin %}
+            <span class="field-error">{{ errors.country_of_origin }}</span>
+          {% endif %}
+        </div>
+
+        <div>
+          <label class="field-label" for="government_warning">Government Warning</label>
+          <textarea class="field-input {% if errors.government_warning %}is-invalid{% endif %}"
+                    id="government_warning" name="government_warning"
+                    rows="4"
+                    style="resize: vertical;">{{ form_values.government_warning or standard_warning }}</textarea>
+          {% if errors.government_warning %}
+            <span class="field-error">{{ errors.government_warning }}</span>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Primary action -->
+    <button type="submit" class="btn-primary" id="submit-btn">
+      <span id="btn-label">Run Verification</span>
+      <span class="spinner" id="btn-spinner" style="display:none;"></span>
+    </button>
+
+  </form>
+
+  <!-- Results card -->
+  <div class="card" id="results-card">
+    {% if result %}
+      {% include "_result_panel.html" %}
+    {% else %}
+      <p class="results-empty">Results will appear here after verification.</p>
+    {% endif %}
+  </div>
+
+</main>
+
+<script>
+  // Import toggle
+  function toggleImport(checked) {
+    const field = document.getElementById('country-field');
+    if (checked) {
+      field.classList.add('visible');
+    } else {
+      field.classList.remove('visible');
+    }
+  }
+
+  // Filename preview
+  document.getElementById('label_image').addEventListener('change', function () {
+    const fn = this.files[0] ? this.files[0].name : '';
+    document.getElementById('upload-filename').textContent = fn;
+  });
+
+  // Loading state while request is in flight
+  document.getElementById('verify-form').addEventListener('submit', function () {
+    const btn = document.getElementById('submit-btn');
+    const label = document.getElementById('btn-label');
+    const spinner = document.getElementById('btn-spinner');
+    btn.disabled = true;
+    label.textContent = 'Verifying…';
+    spinner.style.display = 'inline-block';
+  });
+</script>
+
+</body>
+</html>

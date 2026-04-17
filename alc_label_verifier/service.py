@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import time
 from typing import Any, Dict
 
 from alc_label_verifier._constants import FIELD_NAMES
+from alc_label_verifier.exceptions import UnreadableImageError
 from alc_label_verifier.matching import (
     is_globally_unreadable,
     match_alcohol_content,
@@ -47,11 +49,22 @@ def verify_label(image_path: str, application: Dict[str, Any]) -> Dict[str, Any]
 
     The returned dict matches the eval harness contract:
       {overall_verdict, recommended_action, field_results: {field: {status, reason_code}}}
+    Extra keys (observed_value, processing_ms) are additive and do not affect eval semantics.
     """
-    lines = extract_lines(image_path)
+    t0 = time.monotonic()
+    try:
+        lines = extract_lines(image_path)
+    except UnreadableImageError:
+        elapsed_ms = round((time.monotonic() - t0) * 1000)
+        result = _all_unreadable_result()
+        result["processing_ms"] = elapsed_ms
+        return result
 
     if is_globally_unreadable(lines):
-        return _all_unreadable_result()
+        elapsed_ms = round((time.monotonic() - t0) * 1000)
+        result = _all_unreadable_result()
+        result["processing_ms"] = elapsed_ms
+        return result
 
     # Partition lines into sections
     header_lines, warning_anchor, warning_body = partition_lines(lines)
@@ -99,14 +112,23 @@ def verify_label(image_path: str, application: Dict[str, Any]) -> Dict[str, Any]
     )
     # Trigger global-unreadable when 4+ of 6 required fields are unreadable
     if unreadable_count >= 4:
-        return _all_unreadable_result()
+        elapsed_ms = round((time.monotonic() - t0) * 1000)
+        result = _all_unreadable_result()
+        result["processing_ms"] = elapsed_ms
+        return result
 
     verdict, action = _derive_verdict(field_results)
+    elapsed_ms = round((time.monotonic() - t0) * 1000)
     return {
         "overall_verdict": verdict,
         "recommended_action": action,
+        "processing_ms": elapsed_ms,
         "field_results": {
-            name: {"status": fr.status, "reason_code": fr.reason_code}
+            name: {
+                "status": fr.status,
+                "reason_code": fr.reason_code,
+                **({"observed_value": fr.observed_value} if fr.observed_value is not None else {}),
+            }
             for name, fr in field_results.items()
         },
     }

@@ -22,6 +22,7 @@ class FieldResult:
                        # not_applicable | unreadable | warning_prefix_error | warning_text_mismatch
     extracted_text: Optional[str] = None
     confidence: Optional[float] = None
+    observed_value: Optional[str] = None
 
 
 @dataclass

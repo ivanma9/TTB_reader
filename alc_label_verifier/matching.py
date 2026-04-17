@@ -111,23 +111,24 @@ def _compare_text(
     """Compare normalized OCR text to expected; return FieldResult."""
     norm_ocr = normalize_text(ocr_text)
     norm_exp = normalize_text(expected)
+    obs = ocr_text.strip() or None
 
     if not norm_ocr:
         return FieldResult(status="needs_review", reason_code="unreadable")
 
     if norm_ocr == norm_exp:
         reason = "exact_match" if ocr_text.strip() == expected.strip() else "normalized_match"
-        return FieldResult(status="match", reason_code=reason)
+        return FieldResult(status="match", reason_code=reason, observed_value=obs)
 
     if use_fuzzy:
         score = fuzz.token_sort_ratio(norm_ocr, norm_exp)
         if score >= FUZZY_MATCH_THRESHOLD:
-            return FieldResult(status="match", reason_code="normalized_match")
+            return FieldResult(status="match", reason_code="normalized_match", observed_value=obs)
 
     if confidence >= confidence_threshold:
-        return FieldResult(status="mismatch", reason_code="wrong_value")
+        return FieldResult(status="mismatch", reason_code="wrong_value", observed_value=obs)
 
-    return FieldResult(status="needs_review", reason_code="unreadable")
+    return FieldResult(status="needs_review", reason_code="unreadable", observed_value=obs)
 
 
 # ---------------------------------------------------------------------------
@@ -251,12 +252,12 @@ def match_alcohol_content(all_lines: List[OcrLine], expected: str) -> FieldResul
 
     if match_line is not None:
         reason = "exact_match" if match_line.text.strip() == expected.strip() else "normalized_match"
-        return FieldResult(status="match", reason_code=reason)
+        return FieldResult(status="match", reason_code=reason, observed_value=match_line.text.strip())
 
     if mismatch_line is not None:
         if mismatch_line.confidence >= STANDARD_CONFIDENCE_THRESHOLD:
-            return FieldResult(status="mismatch", reason_code="wrong_value")
-        return FieldResult(status="needs_review", reason_code="unreadable")
+            return FieldResult(status="mismatch", reason_code="wrong_value", observed_value=mismatch_line.text.strip())
+        return FieldResult(status="needs_review", reason_code="unreadable", observed_value=mismatch_line.text.strip())
 
     return FieldResult(status="needs_review", reason_code="unreadable")
 
@@ -287,12 +288,12 @@ def match_net_contents(all_lines: List[OcrLine], expected: str) -> FieldResult:
 
     if match_line is not None:
         reason = "exact_match" if match_line.text.strip() == expected.strip() else "normalized_match"
-        return FieldResult(status="match", reason_code=reason)
+        return FieldResult(status="match", reason_code=reason, observed_value=match_line.text.strip())
 
     if mismatch_line is not None:
         if mismatch_line.confidence >= STANDARD_CONFIDENCE_THRESHOLD:
-            return FieldResult(status="mismatch", reason_code="wrong_value")
-        return FieldResult(status="needs_review", reason_code="unreadable")
+            return FieldResult(status="mismatch", reason_code="wrong_value", observed_value=mismatch_line.text.strip())
+        return FieldResult(status="needs_review", reason_code="unreadable", observed_value=mismatch_line.text.strip())
 
     return FieldResult(status="needs_review", reason_code="unreadable")
 
@@ -321,16 +322,17 @@ def match_producer_name_address(
 
     norm_ocr = normalize_text(ocr_text)
     norm_exp = normalize_text(expected)
+    obs = ocr_text.strip() or None
 
     if norm_ocr == norm_exp:
         reason = "exact_match" if ocr_text.strip() == expected.strip() else "normalized_match"
-        return FieldResult(status="match", reason_code=reason)
+        return FieldResult(status="match", reason_code=reason, observed_value=obs)
 
     # Narrow fuzzy: allow minor single-character OCR slips but not address-level changes
     if fuzz.token_set_ratio(norm_ocr, norm_exp) >= 92:
-        return FieldResult(status="match", reason_code="normalized_match")
+        return FieldResult(status="match", reason_code="normalized_match", observed_value=obs)
 
-    return FieldResult(status="mismatch", reason_code="wrong_value")
+    return FieldResult(status="mismatch", reason_code="wrong_value", observed_value=obs)
 
 
 def _is_country_anchor(text: str) -> bool:
@@ -372,13 +374,14 @@ def match_country_of_origin(
 
     norm_after = normalize_text(after)
     norm_expected = normalize_text(expected or "")
+    obs = after.strip() or None
 
     if norm_after == norm_expected:
         # Case-insensitive exact match: labels often render country in all-caps
         reason = "exact_match" if after.strip().lower() == (expected or "").strip().lower() else "normalized_match"
-        return FieldResult(status="match", reason_code=reason)
+        return FieldResult(status="match", reason_code=reason, observed_value=obs)
 
-    return FieldResult(status="mismatch", reason_code="wrong_value")
+    return FieldResult(status="mismatch", reason_code="wrong_value", observed_value=obs)
 
 
 def match_government_warning(
@@ -436,15 +439,16 @@ def match_government_warning(
             return FieldResult(status="needs_review", reason_code="unreadable")
 
     # --- Body text comparison ---
+    obs = ocr_body.strip() or None
     if norm_ocr_body == norm_exp_body:
-        return FieldResult(status="match", reason_code="exact_match")
+        return FieldResult(status="match", reason_code="exact_match", observed_value=obs)
 
     similarity = fuzz.ratio(norm_ocr_body, norm_exp_body)
     if similarity >= 99:
         # Near-identical — likely minor OCR noise, not a real deviation
-        return FieldResult(status="needs_review", reason_code="unreadable")
+        return FieldResult(status="needs_review", reason_code="unreadable", observed_value=obs)
 
-    return FieldResult(status="mismatch", reason_code="warning_text_mismatch")
+    return FieldResult(status="mismatch", reason_code="warning_text_mismatch", observed_value=obs)
 
 
 # ---------------------------------------------------------------------------

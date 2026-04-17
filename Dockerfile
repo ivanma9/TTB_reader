@@ -17,9 +17,9 @@ WORKDIR /app
 # Cache model weights in a known path inside the image
 ENV PADDLEOCR_HOME=/app/.paddleocr
 
-# Install base package and dev/test tools
+# Install base package + web extras; httpx needed for smoke_verify.py
 COPY pyproject.toml .
-RUN pip install --no-cache-dir ".[dev]"
+RUN pip install --no-cache-dir ".[web]" httpx
 
 # Install PaddlePaddle (CPU x86_64) and PaddleOCR 2.x stable API
 RUN pip install --no-cache-dir "paddlepaddle>=2.6.0" && \
@@ -37,4 +37,6 @@ COPY . .
 # Point the eval harness at the real verifier
 ENV ALC_EVAL_TARGET=alc_label_verifier.adapter:target
 
-CMD ["python", "evals/run_golden_set.py"]
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
