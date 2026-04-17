@@ -335,9 +335,67 @@ def match_producer_name_address(
     return FieldResult(status="mismatch", reason_code="wrong_value", observed_value=obs)
 
 
+COUNTRY_ANCHORS: tuple[str, ...] = (
+    "country of origin",
+    "product of",
+    "imported from",
+    "produced in",
+    "made in",
+)
+
+
+def _find_country_anchor(text: str) -> Optional[str]:
+    """Return the matching anchor phrase or None.
+
+    Fuzzy-matched so OCR typos in the anchor chars still count, but the
+    match must end at a word boundary in the raw line — otherwise a short
+    anchor like "made in" would false-positive on "made inside a barrel".
+    """
+    lowered = text.lower().strip()
+    for anchor in COUNTRY_ANCHORS:
+        anchor_len = len(anchor)
+        if len(lowered) < anchor_len:
+            continue
+        prefix = lowered[:anchor_len]
+        if fuzz.ratio(prefix, anchor) < 85:
+            continue
+        if anchor_len < len(lowered) and lowered[anchor_len].isalnum():
+            continue
+        return anchor
+    return None
+
+
 def _is_country_anchor(text: str) -> bool:
-    prefix = text.lower()[:25]  # only check first 25 chars
-    return fuzz.partial_ratio(prefix, "country of origin") >= 85
+    return _find_country_anchor(text) is not None
+
+
+def _extract_country_value(raw: str, anchor: str, expected: Optional[str]) -> str:
+    """Extract the country value from an anchored line.
+
+    For "Country of Origin: X" we keep the historical colon-split behavior.
+    For colon-less variants ("Product of X"), find the anchor phrase and take
+    up to N tokens after it, where N matches the expected country's word count
+    (so multi-word countries like "United Kingdom" parse correctly).
+    """
+    colon_idx = raw.find(":")
+    if colon_idx != -1:
+        return raw[colon_idx + 1:].strip()
+
+    lowered = raw.lower()
+    idx = lowered.find(anchor)
+    if idx >= 0:
+        after_phrase = raw[idx + len(anchor):].strip()
+    else:
+        tokens = raw.split()
+        anchor_len = len(anchor.split())
+        after_phrase = " ".join(tokens[anchor_len:]).strip()
+
+    tokens = after_phrase.split()
+    if not tokens:
+        return ""
+
+    take = max(1, len((expected or "").split()))
+    return " ".join(tokens[:take]).strip(",.;:!?")
 
 
 def match_country_of_origin(
@@ -349,38 +407,43 @@ def match_country_of_origin(
     if not is_import:
         return FieldResult(status="not_applicable", reason_code="not_applicable")
 
-    country_lines = [l for l in lower_lines if _is_country_anchor(l.text)]
+    candidates: List[tuple[OcrLine, str]] = []
+    for line in lower_lines:
+        anchor = _find_country_anchor(line.text)
+        if anchor:
+            candidates.append((line, anchor))
 
-    if not country_lines:
+    if not candidates:
         if not lower_lines or _region_confidence(lower_lines) < STANDARD_CONFIDENCE_THRESHOLD:
             return FieldResult(status="needs_review", reason_code="unreadable")
         return FieldResult(status="mismatch", reason_code="missing_required")
 
-    line = country_lines[0]
-    confidence = line.confidence
+    norm_expected = normalize_text(expected or "")
 
-    if confidence < STANDARD_CONFIDENCE_THRESHOLD:
+    # Broadened anchor vocabulary means multiple lines can qualify (e.g. a
+    # noisy "Made inside a barrel" alongside "Product of France"). Prefer any
+    # candidate whose extracted value matches expected before falling back to
+    # the first for mismatch reporting.
+    for line, anchor in candidates:
+        if line.confidence < STANDARD_CONFIDENCE_THRESHOLD:
+            continue
+        after = _extract_country_value(line.text, anchor, expected)
+        if after and normalize_text(after) == norm_expected:
+            obs = after.strip() or None
+            reason = "exact_match" if after.strip().lower() == (expected or "").strip().lower() else "normalized_match"
+            return FieldResult(status="match", reason_code=reason, observed_value=obs)
+
+    line, anchor = candidates[0]
+    if line.confidence < STANDARD_CONFIDENCE_THRESHOLD:
         return FieldResult(status="needs_review", reason_code="unreadable")
 
-    raw = line.text
-    # Extract country value after the colon; handles OCR typos in the anchor phrase
-    colon_idx = raw.find(":")
-    after = raw[colon_idx + 1:].strip() if colon_idx != -1 else ""
-
+    after = _extract_country_value(line.text, anchor, expected)
     if not after:
         if expected:
             return FieldResult(status="mismatch", reason_code="missing_required")
         return FieldResult(status="needs_review", reason_code="unreadable")
 
-    norm_after = normalize_text(after)
-    norm_expected = normalize_text(expected or "")
     obs = after.strip() or None
-
-    if norm_after == norm_expected:
-        # Case-insensitive exact match: labels often render country in all-caps
-        reason = "exact_match" if after.strip().lower() == (expected or "").strip().lower() else "normalized_match"
-        return FieldResult(status="match", reason_code=reason, observed_value=obs)
-
     return FieldResult(status="mismatch", reason_code="wrong_value", observed_value=obs)
 
 

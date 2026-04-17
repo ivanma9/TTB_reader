@@ -123,3 +123,71 @@ def test_match_country_of_origin_ocr_typo_anchor():
     lines = [OcrLine(text="Couniry of Origin: Mexico", confidence=0.92, bbox=[], y_center=0, x_center=0)]
     result = match_country_of_origin(lines, "Mexico", is_import=True)
     assert result.status == "match"
+
+
+def test_match_country_of_origin_product_of_variant():
+    lines = [OcrLine(text="PRODUCT OF BRAZIL", confidence=0.95, bbox=[], y_center=0, x_center=0)]
+    result = match_country_of_origin(lines, "Brazil", is_import=True)
+    assert result.status == "match"
+
+
+def test_match_country_of_origin_product_of_mixed_case_with_trailing_text():
+    lines = [OcrLine(text="Product of Peru GOVERNMENT WARNING", confidence=0.95, bbox=[], y_center=0, x_center=0)]
+    result = match_country_of_origin(lines, "Peru", is_import=True)
+    assert result.status == "match"
+
+
+def test_match_country_of_origin_imported_from_variant():
+    lines = [OcrLine(text="IMPORTED FROM FRANCE", confidence=0.95, bbox=[], y_center=0, x_center=0)]
+    result = match_country_of_origin(lines, "France", is_import=True)
+    assert result.status == "match"
+
+
+def test_match_country_of_origin_made_in_variant():
+    lines = [OcrLine(text="Made in Scotland", confidence=0.95, bbox=[], y_center=0, x_center=0)]
+    result = match_country_of_origin(lines, "Scotland", is_import=True)
+    assert result.status == "match"
+
+
+def test_match_country_of_origin_produced_in_variant():
+    lines = [OcrLine(text="Produced in Mexico", confidence=0.95, bbox=[], y_center=0, x_center=0)]
+    result = match_country_of_origin(lines, "Mexico", is_import=True)
+    assert result.status == "match"
+
+
+def test_match_country_of_origin_product_of_wrong_country():
+    lines = [OcrLine(text="PRODUCT OF BRAZIL", confidence=0.95, bbox=[], y_center=0, x_center=0)]
+    result = match_country_of_origin(lines, "France", is_import=True)
+    assert result.status == "mismatch"
+    assert result.reason_code == "wrong_value"
+    assert result.observed_value == "BRAZIL"
+
+
+def test_match_country_of_origin_noisy_line_does_not_shadow_real_anchor():
+    # "Made inside a barrel" starts with "made in" but is not a country
+    # anchor (word-boundary rejects "inside"). The real anchor is on the next
+    # line and must still win.
+    lines = [
+        OcrLine(text="Made inside a barrel", confidence=0.95, bbox=[], y_center=0, x_center=0),
+        OcrLine(text="Product of France", confidence=0.95, bbox=[], y_center=1, x_center=0),
+    ]
+    result = match_country_of_origin(lines, "France", is_import=True)
+    assert result.status == "match"
+
+
+def test_match_country_of_origin_multiple_anchors_picks_matching_value():
+    # Two legitimate anchor lines; pick the one whose value matches expected.
+    lines = [
+        OcrLine(text="Product of Brazil", confidence=0.95, bbox=[], y_center=0, x_center=0),
+        OcrLine(text="Imported from France", confidence=0.95, bbox=[], y_center=1, x_center=0),
+    ]
+    result = match_country_of_origin(lines, "France", is_import=True)
+    assert result.status == "match"
+
+
+def test_match_country_of_origin_rejects_made_inside_false_positive():
+    # Word-boundary rule: "made inside" must not match "made in" anchor.
+    lines = [OcrLine(text="Made inside a cave", confidence=0.95, bbox=[], y_center=0, x_center=0)]
+    result = match_country_of_origin(lines, "Scotland", is_import=True)
+    assert result.status == "mismatch"
+    assert result.reason_code == "missing_required"

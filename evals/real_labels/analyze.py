@@ -20,7 +20,7 @@ from alc_label_verifier.adapter import target as verify_target
 CASES_PATH = ROOT_DIR / "evals" / "real_labels" / "cases.jsonl"
 GAPS_DIR = ROOT_DIR / "docs"
 GAPS_CSV = GAPS_DIR / "real-label-gaps.csv"
-GAPS_MD = GAPS_DIR / "real-label-gaps.md"
+GAPS_MD = GAPS_DIR / "real-label-gaps-latest.md"
 
 
 def _load_cases() -> List[Dict[str, Any]]:
@@ -41,6 +41,7 @@ def main() -> int:
 
     rows: List[Dict[str, Any]] = []
     field_status_counts: Dict[str, Counter] = defaultdict(Counter)
+    field_na_split: Dict[str, Counter] = defaultdict(Counter)
     field_reason_on_fail: Dict[str, Counter] = defaultdict(Counter)
     verdict_counter: Counter = Counter()
     action_counter: Counter = Counter()
@@ -77,6 +78,9 @@ def main() -> int:
             row[f"{field}_observed"] = observed
 
             field_status_counts[field][act_status] += 1
+            if act_status == "not_applicable":
+                bucket = "correct_na" if exp_status == "not_applicable" else "wrong_na"
+                field_na_split[field][bucket] += 1
             if act_status != exp_status:
                 field_reason_on_fail[field][act_reason or "none"] += 1
 
@@ -93,7 +97,7 @@ def main() -> int:
     total = len(cases)
     lines: List[str] = []
     lines.append("# Real-label eval gaps\n")
-    lines.append(f"Cases: **{total}** (source: TTB COLA 2017 demo via Kaggle)\n")
+    lines.append(f"Cases: **{total}** (source: TTB COLA 2018 demo via Kaggle)\n")
     lines.append("\n## Overall verdict distribution\n")
     for verdict, n in verdict_counter.most_common():
         lines.append(f"- `{verdict}`: {n}")
@@ -102,13 +106,19 @@ def main() -> int:
         lines.append(f"- `{action}`: {n}")
 
     lines.append("\n## Per-field actual-status distribution\n")
-    lines.append("| Field | match | mismatch | needs_review | not_applicable |")
-    lines.append("|-------|-------|----------|--------------|----------------|")
+    lines.append(
+        "`wrong_na` = verifier returned not_applicable when a value was expected "
+        "(silent regression).\n"
+    )
+    lines.append("| Field | match | mismatch | needs_review | correct_na | wrong_na |")
+    lines.append("|-------|-------|----------|--------------|------------|----------|")
     for field in FIELD_NAMES:
         c = field_status_counts[field]
+        na = field_na_split[field]
         lines.append(
             f"| {field} | {c.get('match',0)} | {c.get('mismatch',0)} | "
-            f"{c.get('needs_review',0)} | {c.get('not_applicable',0)} |"
+            f"{c.get('needs_review',0)} | {na.get('correct_na',0)} | "
+            f"{na.get('wrong_na',0)} |"
         )
 
     lines.append("\n## Top failure reasons per field\n")
