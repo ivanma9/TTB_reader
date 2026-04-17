@@ -503,22 +503,29 @@ def _extract_country_value(raw: str, anchor: str, expected: Optional[str]) -> st
 
 
 def match_country_of_origin(
-    lower_lines: List[OcrLine],
+    region_lines: List[OcrLine],
     expected: Optional[str],
     is_import: bool,
 ) -> FieldResult:
-    """Country of origin: conditional rules."""
+    """Country of origin: conditional rules.
+
+    Searches ``region_lines`` for a country-anchor phrase. Callers should pass
+    the full non-warning label region (class + brand + alcohol + lower) so
+    anchors that appear above the ABV line — e.g. "PRODUCT OF BRAZIL" on a
+    cachaça label where the region phrase sits under the fanciful name —
+    aren't silently filtered out.
+    """
     if not is_import:
         return FieldResult(status="not_applicable", reason_code="not_applicable")
 
     candidates: List[tuple[OcrLine, str]] = []
-    for line in lower_lines:
+    for line in region_lines:
         anchor = _find_country_anchor(line.text)
         if anchor:
             candidates.append((line, anchor))
 
     if not candidates:
-        if not lower_lines or _region_confidence(lower_lines) < STANDARD_CONFIDENCE_THRESHOLD:
+        if not region_lines or _region_confidence(region_lines) < STANDARD_CONFIDENCE_THRESHOLD:
             return FieldResult(status="needs_review", reason_code="unreadable")
         return FieldResult(status="mismatch", reason_code="missing_required")
 

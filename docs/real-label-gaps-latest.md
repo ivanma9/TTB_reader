@@ -24,7 +24,7 @@ Cases: **43** (source: TTB COLA 2018 demo via Kaggle)
 | alcohol_content | 31 | 1 | 11 | 0 | 0 |
 | net_contents | 22 | 0 | 21 | 0 | 0 |
 | producer_name_address | 0 | 25 | 18 | 0 | 0 |
-| country_of_origin | 1 | 10 | 11 | 21 | 0 |
+| country_of_origin | 3 | 9 | 10 | 21 | 0 |
 | government_warning | 0 | 4 | 39 | 0 | 0 |
 
 ## Top failure reasons per field
@@ -50,8 +50,8 @@ Cases: **43** (source: TTB COLA 2018 demo via Kaggle)
 - `unreadable`: 18
 
 ### country_of_origin
-- `unreadable`: 11
-- `missing_required`: 10
+- `unreadable`: 10
+- `missing_required`: 9
 
 ### government_warning
 - `unreadable`: 39

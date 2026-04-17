@@ -208,3 +208,37 @@ class TestWarmOcr:
             mock_init.return_value = MagicMock()
             ocr_module.warm_ocr()
             mock_init.assert_called_once()
+
+
+# ---------------------------------------------------------------------------
+# Service-level regression: country anchor above the ABV line must be visible
+# to match_country_of_origin. Prior wiring passed only `lower_lines` so a
+# "PRODUCT OF BRAZIL" line in the brand/class region was silently filtered
+# out before the matcher ran.
+# ---------------------------------------------------------------------------
+
+class TestCountryAnchorAboveAbv:
+    def test_country_anchor_above_abv_line_is_found(self):
+        from alc_label_verifier.service import verify_label
+
+        ocr_lines = [
+            OcrLine(text="CACHACA", confidence=1.0, bbox=[], y_center=100, x_center=50),
+            OcrLine(text="PRODUCT OF BRAZIL", confidence=0.99, bbox=[], y_center=150, x_center=50),
+            OcrLine(text="DESDE 1925", confidence=1.0, bbox=[], y_center=200, x_center=50),
+            OcrLine(text="40% Alc./Vol.", confidence=0.98, bbox=[], y_center=300, x_center=50),
+            OcrLine(text="750 ml", confidence=0.98, bbox=[], y_center=400, x_center=50),
+        ]
+        application = {
+            "brand_name": "Bucco",
+            "class_type": "Cachaca",
+            "alcohol_content": "40% Alc./Vol. (80 Proof)",
+            "net_contents": "750 milliliters",
+            "producer_name_address": "Irrelevant, BRAZIL",
+            "is_import": True,
+            "country_of_origin": "Brazil",
+            "government_warning": "",
+        }
+        with patch("alc_label_verifier.service.extract_lines") as mock_ocr:
+            mock_ocr.return_value = ocr_lines
+            result = verify_label("/fake/path.png", application)
+        assert result["field_results"]["country_of_origin"]["status"] == "match"

@@ -81,7 +81,7 @@ def verify_label(image_path: str, application: Dict[str, Any]) -> Dict[str, Any]
         lower_lines, application.get("producer_name_address", "")
     )
     country_result = match_country_of_origin(
-        lower_lines,
+        header_lines,
         application.get("country_of_origin"),
         is_import,
     )
