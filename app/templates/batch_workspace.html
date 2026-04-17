@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compliance Auditor — Batch {{ workspace.batch_id }}</title>
+  <link rel="stylesheet" href="/static/workbench.css" />
+</head>
+<body>
+
+<header class="app-header">
+  <span class="app-icon">⚖</span>
+  <span class="app-title">Compliance Auditor</span>
+  <nav class="app-nav">
+    <a href="/" class="nav-link">Single Label</a>
+    <a href="/batch" class="nav-link nav-link--active">Batch Review</a>
+  </nav>
+</header>
+
+<main>
+
+  <section>
+    <h1 class="page-heading">Batch Workspace</h1>
+    <span class="scope-badge">
+      {{ workspace.rows | length }} label{% if workspace.rows | length != 1 %}s{% endif %}
+      · {{ workspace.status }}
+    </span>
+  </section>
+
+  {# ── Summary (shown when batch has started processing) ── #}
+  {% if workspace.status in ("queued", "running", "complete") %}
+    <div class="card" id="batch-summary-card">
+      {% include "_batch_summary.html" %}
+    </div>
+    <div id="polling-stall-warning" class="alert-error" style="display:none;">
+      Verification paused — please refresh the page to resume.
+    </div>
+  {% endif %}
+
+  {# ── Editor form (draft state) ── #}
+  {% if workspace.status == "draft" %}
+
+    <form method="post" action="/batch/{{ workspace.batch_id }}/run"
+          id="batch-run-form" novalidate>
+
+      {% for row in workspace.rows %}
+        <div class="card batch-row-card" id="card-{{ row.row_id }}">
+          <div class="batch-row-header">
+            <p class="card-section-label">Row {{ loop.index }} — {{ row.filename }}</p>
+            <span class="status-chip draft">Draft</span>
+          </div>
+
+          <div class="field-group">
+
+            <div>
+              <label class="field-label" for="{{ row.row_id }}__brand_name">Brand Name</label>
+              <input class="field-input {% if row.errors.brand_name %}is-invalid{% endif %}"
+                     type="text" id="{{ row.row_id }}__brand_name"
+                     name="{{ row.row_id }}__brand_name"
+                     value="{{ row.form_values.get('brand_name', '') }}" />
+              {% if row.errors.brand_name %}
+                <span class="field-error">{{ row.errors.brand_name }}</span>
+              {% endif %}
+            </div>
+
+            <div class="field-row">
+              <div>
+                <label class="field-label" for="{{ row.row_id }}__class_type">Class / Type</label>
+                <input class="field-input {% if row.errors.class_type %}is-invalid{% endif %}"
+                       type="text" id="{{ row.row_id }}__class_type"
+                       name="{{ row.row_id }}__class_type"
+                       value="{{ row.form_values.get('class_type', '') }}" />
+                {% if row.errors.class_type %}
+                  <span class="field-error">{{ row.errors.class_type }}</span>
+                {% endif %}
+              </div>
+              <div>
+                <label class="field-label" for="{{ row.row_id }}__alcohol_content">Alcohol Content</label>
+                <input class="field-input {% if row.errors.alcohol_content %}is-invalid{% endif %}"
+                       type="text" id="{{ row.row_id }}__alcohol_content"
+                       name="{{ row.row_id }}__alcohol_content"
+                       value="{{ row.form_values.get('alcohol_content', '') }}"
+                       placeholder="e.g. 40% Alc./Vol. (80 Proof)" />
+                {% if row.errors.alcohol_content %}
+                  <span class="field-error">{{ row.errors.alcohol_content }}</span>
+                {% endif %}
+              </div>
+            </div>
+
+            <div>
+              <label class="field-label" for="{{ row.row_id }}__net_contents">Net Contents</label>
+              <input class="field-input {% if row.errors.net_contents %}is-invalid{% endif %}"
+                     type="text" id="{{ row.row_id }}__net_contents"
+                     name="{{ row.row_id }}__net_contents"
+                     value="{{ row.form_values.get('net_contents', '') }}"
+                     placeholder="e.g. 750 mL" />
+              {% if row.errors.net_contents %}
+                <span class="field-error">{{ row.errors.net_contents }}</span>
+              {% endif %}
+            </div>
+
+            <div>
+              <label class="field-label" for="{{ row.row_id }}__producer_name_address">Producer / Address</label>
+              <input class="field-input {% if row.errors.producer_name_address %}is-invalid{% endif %}"
+                     type="text" id="{{ row.row_id }}__producer_name_address"
+                     name="{{ row.row_id }}__producer_name_address"
+                     value="{{ row.form_values.get('producer_name_address', '') }}" />
+              {% if row.errors.producer_name_address %}
+                <span class="field-error">{{ row.errors.producer_name_address }}</span>
+              {% endif %}
+            </div>
+
+            <div>
+              <label class="checkbox-row">
+                <input type="checkbox" id="{{ row.row_id }}__is_import"
+                       name="{{ row.row_id }}__is_import" value="1"
+                       {% if row.form_values.get('is_import') %}checked{% endif %}
+                       onchange="toggleImportRow('{{ row.row_id }}', this.checked)" />
+                <span class="checkbox-label">Imported product</span>
+              </label>
+            </div>
+
+            <div class="country-field {% if row.form_values.get('is_import') %}visible{% endif %}"
+                 id="{{ row.row_id }}__country-field">
+              <label class="field-label" for="{{ row.row_id }}__country_of_origin">Country of Origin</label>
+              <input class="field-input {% if row.errors.country_of_origin %}is-invalid{% endif %}"
+                     type="text" id="{{ row.row_id }}__country_of_origin"
+                     name="{{ row.row_id }}__country_of_origin"
+                     value="{{ row.form_values.get('country_of_origin', '') }}" />
+              {% if row.errors.country_of_origin %}
+                <span class="field-error">{{ row.errors.country_of_origin }}</span>
+              {% endif %}
+            </div>
+
+            <div>
+              <label class="field-label" for="{{ row.row_id }}__government_warning">Government Warning</label>
+              <textarea class="field-input {% if row.errors.government_warning %}is-invalid{% endif %}"
+                        id="{{ row.row_id }}__government_warning"
+                        name="{{ row.row_id }}__government_warning"
+                        rows="3" style="resize: vertical;">{{ row.form_values.get('government_warning') or standard_warning }}</textarea>
+              {% if row.errors.government_warning %}
+                <span class="field-error">{{ row.errors.government_warning }}</span>
+              {% endif %}
+            </div>
+
+          </div>
+        </div>
+      {% endfor %}
+
+      <button type="submit" class="btn-primary" id="run-btn">
+        <span id="run-btn-label">Run Batch Verification</span>
+        <span class="spinner" id="run-btn-spinner" style="display:none;"></span>
+      </button>
+
+    </form>
+
+  {% else %}
+
+    {# ── Queue / Results view (queued, running, complete) ── #}
+    <div id="batch-rows-container">
+      {% include "_batch_rows.html" %}
+    </div>
+
+  {% endif %}
+
+</main>
+
+<script>
+  function toggleImportRow(rowId, checked) {
+    const field = document.getElementById(rowId + '__country-field');
+    if (field) {
+      field.classList.toggle('visible', checked);
+    }
+  }
+
+  const runForm = document.getElementById('batch-run-form');
+  if (runForm) {
+    runForm.addEventListener('submit', function () {
+      const btn = document.getElementById('run-btn');
+      const label = document.getElementById('run-btn-label');
+      const spinner = document.getElementById('run-btn-spinner');
+      btn.disabled = true;
+      label.textContent = 'Starting…';
+      spinner.style.display = 'inline-block';
+    });
+  }
+
+  {% if polling %}
+  // Visible queue polling loop
+  const BATCH_ID = "{{ workspace.batch_id }}";
+  const POLL_INTERVAL_MS = 800;
+  const MAX_RETRIES = 3;
+  let retryCount = 0;
+
+  async function processNext() {
+    try {
+      const resp = await fetch('/batch/' + BATCH_ID + '/process-next', { method: 'POST' });
+      if (!resp.ok) {
+        retryCount++;
+        if (retryCount <= MAX_RETRIES) {
+          setTimeout(processNext, POLL_INTERVAL_MS * retryCount);
+        } else {
+          showPollingStall();
+        }
+        return;
+      }
+      retryCount = 0;
+      const data = await resp.json();
+      updateRowsUI(data.rows);
+      updateSummaryUI(data.summary);
+      if (!data.done) {
+        setTimeout(processNext, POLL_INTERVAL_MS);
+      }
+    } catch (err) {
+      console.error('process-next fetch error', err);
+      retryCount++;
+      if (retryCount <= MAX_RETRIES) {
+        setTimeout(processNext, POLL_INTERVAL_MS * retryCount);
+      } else {
+        showPollingStall();
+      }
+    }
+  }
+
+  function showPollingStall() {
+    const el = document.getElementById('polling-stall-warning');
+    if (el) el.style.display = '';
+  }
+
+  function updateRowsUI(rows) {
+    rows.forEach(function(row) {
+      const card = document.getElementById('brow-' + row.row_id);
+      if (!card) return;
+
+      const chip = card.querySelector('.queue-state-chip');
+      if (chip) {
+        chip.className = 'status-chip queue-state-chip ' + row.queue_state;
+        chip.textContent = stateLabel(row.queue_state);
+      }
+
+      const verdictEl = card.querySelector('.brow-verdict');
+      if (verdictEl) {
+        if (row.overall_verdict) {
+          verdictEl.textContent = verdictLabel(row.overall_verdict);
+          verdictEl.className = 'status-chip brow-verdict ' + row.overall_verdict;
+        }
+      }
+
+      const msEl = card.querySelector('.brow-ms');
+      if (msEl && row.processing_ms != null) {
+        msEl.textContent = row.processing_ms + ' ms';
+      }
+
+      const sysErrEl = card.querySelector('.brow-system-error');
+      if (sysErrEl && row.system_error) {
+        sysErrEl.style.display = '';
+        sysErrEl.textContent = row.system_error.message;
+      }
+    });
+  }
+
+  function updateSummaryUI(summary) {
+    const setEl = function(id, val) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+    setEl('summary-match', summary.match);
+    setEl('summary-mismatch', summary.mismatch);
+    setEl('summary-needs-review', summary.needs_review);
+    setEl('summary-done', summary.complete + ' / ' + summary.total);
+    setEl('summary-system-errors', summary.system_error_count);
+  }
+
+  function stateLabel(s) {
+    return { draft: 'Draft', queued: 'Queued', processing: 'Processing…',
+             complete: 'Complete', processing_error: 'Error' }[s] || s;
+  }
+
+  function verdictLabel(v) {
+    return { match: 'Match', mismatch: 'Mismatch', needs_review: 'Needs Review' }[v] || v;
+  }
+
+  // Kick off the first poll
+  setTimeout(processNext, 200);
+  {% endif %}
+</script>
+
+</body>
+</html>

@@ -29,39 +29,4 @@
 </div>
 
 <!-- Field-by-field rows -->
-{% for field_key, fr in result.field_results.items() %}
-  {% set field_status = fr.status %}
-  {% set label = field_labels.get(field_key, field_key) %}
-  {% set explanation = reason_explanations.get(fr.reason_code, fr.reason_code) %}
-
-  <div class="field-row-result {{ field_status }}">
-    <div class="frow-header">
-      <span class="frow-name">{{ label }}</span>
-      <span class="status-chip {{ field_status }}">
-        {% if field_status == "match" %}Match
-        {% elif field_status == "mismatch" %}Mismatch
-        {% elif field_status == "needs_review" %}Needs Review
-        {% else %}N/A
-        {% endif %}
-      </span>
-    </div>
-
-    {% if field_status in ("mismatch", "needs_review") and fr.get("observed_value") %}
-      <div class="frow-values">
-        {% if field_status == "mismatch" %}
-          <div>
-            <span class="fval-label">Observed</span>
-            <span class="fval-observed">{{ fr.observed_value }}</span>
-          </div>
-        {% else %}
-          <div>
-            <span class="fval-label">Observed</span>
-            <span>{{ fr.observed_value }}</span>
-          </div>
-        {% endif %}
-      </div>
-    {% endif %}
-
-    <p class="frow-explanation">{{ explanation }}</p>
-  </div>
-{% endfor %}
+{% include "_field_results.html" %}

@@ -458,6 +458,191 @@ main {
   font-weight: 500;
 }
 
+/* ── App nav (single/batch switcher) ── */
+
+.app-nav {
+  margin-left: auto;
+  display: flex;
+  gap: 0.25rem;
+}
+
+.nav-link {
+  font-family: var(--font-label);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  text-decoration: none;
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--radius);
+  transition: background 0.1s, color 0.1s;
+}
+
+.nav-link:hover {
+  background: var(--surface-container);
+  color: var(--on-surface);
+}
+
+.nav-link--active {
+  background: var(--surface-container-high);
+  color: var(--primary);
+}
+
+/* ── Batch upload area ── */
+
+.batch-upload-area {
+  padding: 3rem 1rem;
+}
+
+/* ── Batch workspace ── */
+
+.batch-row-card {
+  margin-bottom: 0;
+}
+
+.batch-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.875rem;
+}
+
+.batch-row-filename {
+  font-family: var(--font-label);
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--on-surface);
+}
+
+.batch-row-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.status-chip.draft {
+  color: var(--on-surface-variant);
+}
+
+.status-chip.queued {
+  color: var(--on-surface-variant);
+  background: var(--surface-container-high);
+}
+
+.status-chip.processing {
+  color: var(--primary);
+  background: rgba(43, 91, 181, 0.12);
+}
+
+.status-chip.complete {
+  color: var(--success);
+}
+
+.status-chip.processing_error {
+  color: var(--error);
+  background: var(--error-container);
+}
+
+.brow-ms {
+  font-family: var(--font-label);
+  font-size: 0.6875rem;
+  color: var(--on-surface-variant);
+  margin-bottom: 0.5rem;
+  min-height: 1em;
+}
+
+.batch-system-error {
+  background: var(--error-container);
+  color: var(--error);
+  border-radius: var(--radius-lg);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.8125rem;
+  margin-bottom: 0.5rem;
+}
+
+.brow-drill-down {
+  margin-top: 0.625rem;
+}
+
+.brow-drill-summary {
+  font-family: var(--font-label);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  padding: 0.25rem 0;
+  user-select: none;
+}
+
+.brow-drill-summary:hover {
+  color: var(--primary);
+}
+
+.brow-field-results {
+  margin-top: 0.5rem;
+}
+
+/* ── Batch summary ── */
+
+.batch-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+.summary-stat {
+  background: var(--surface-container-low);
+  border-radius: var(--radius-lg);
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.summary-stat-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 800;
+  font-family: var(--font-heading);
+  margin-bottom: 0.25rem;
+}
+
+.summary-stat-label {
+  font-family: var(--font-label);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--on-surface-variant);
+}
+
+.summary-stat--match .summary-stat-value { color: var(--success); }
+.summary-stat--mismatch .summary-stat-value { color: var(--error); }
+.summary-stat--needs-review .summary-stat-value { color: var(--tertiary); }
+
+.batch-summary-secondary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.summary-secondary-item {
+  font-size: 0.75rem;
+  color: var(--on-surface-variant);
+}
+
+.summary-secondary-item--error {
+  color: var(--error);
+}
+
+.batch-progress-line {
+  font-size: 0.8125rem;
+  color: var(--on-surface-variant);
+}
+
 /* ── Spinner (loading state on button) ── */
 
 @keyframes spin {

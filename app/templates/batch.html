@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compliance Auditor — Batch Review</title>
+  <link rel="stylesheet" href="/static/workbench.css" />
+</head>
+<body>
+
+<!-- App header -->
+<header class="app-header">
+  <span class="app-icon">⚖</span>
+  <span class="app-title">Compliance Auditor</span>
+  <nav class="app-nav">
+    <a href="/" class="nav-link">Single Label</a>
+    <a href="/batch" class="nav-link nav-link--active">Batch Review</a>
+  </nav>
+</header>
+
+<main>
+
+  <section>
+    <h1 class="page-heading">Batch Review</h1>
+    <span class="scope-badge">Distilled Spirits · up to 10 images</span>
+  </section>
+
+  {% if upload_errors %}
+    <div class="alert-error" role="alert">
+      {% for msg in upload_errors %}
+        <p>{{ msg }}</p>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" action="/batch/session" enctype="multipart/form-data"
+        id="batch-upload-form" novalidate>
+
+    <div class="card">
+      <p class="card-section-label">Select Label Images</p>
+      <div class="upload-area batch-upload-area" id="upload-area">
+        <input type="file" name="label_images" id="label_images"
+               accept="image/*" multiple required />
+        <span class="upload-icon">📷</span>
+        <p class="upload-label">Click to select up to 10 label images (max 20 MB each, 100 MB total)</p>
+        <p class="upload-filename" id="upload-filename"></p>
+      </div>
+    </div>
+
+    <button type="submit" class="btn-primary" id="submit-btn">
+      <span id="btn-label">Upload &amp; Continue</span>
+      <span class="spinner" id="btn-spinner" style="display:none;"></span>
+    </button>
+
+  </form>
+
+</main>
+
+<script>
+  document.getElementById('label_images').addEventListener('change', function () {
+    const count = this.files.length;
+    document.getElementById('upload-filename').textContent =
+      count === 0 ? '' : count === 1 ? this.files[0].name : count + ' files selected';
+  });
+
+  document.getElementById('batch-upload-form').addEventListener('submit', function () {
+    const btn = document.getElementById('submit-btn');
+    const label = document.getElementById('btn-label');
+    const spinner = document.getElementById('btn-spinner');
+    btn.disabled = true;
+    label.textContent = 'Uploading…';
+    spinner.style.display = 'inline-block';
+  });
+</script>
+
+</body>
+</html>

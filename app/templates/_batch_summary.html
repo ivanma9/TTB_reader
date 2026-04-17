@@ -1,0 +1,42 @@
+{# Batch summary card content. Requires: summary, workspace #}
+<p class="card-section-label">Batch Summary</p>
+
+<div class="batch-summary-grid">
+  <div class="summary-stat summary-stat--match">
+    <span class="summary-stat-value" id="summary-match">{{ summary.match }}</span>
+    <span class="summary-stat-label">Match</span>
+  </div>
+  <div class="summary-stat summary-stat--mismatch">
+    <span class="summary-stat-value" id="summary-mismatch">{{ summary.mismatch }}</span>
+    <span class="summary-stat-label">Mismatch</span>
+  </div>
+  <div class="summary-stat summary-stat--needs-review">
+    <span class="summary-stat-value" id="summary-needs-review">{{ summary.needs_review }}</span>
+    <span class="summary-stat-label">Needs Review</span>
+  </div>
+</div>
+
+<div class="batch-summary-secondary">
+  <span class="summary-secondary-item">
+    Manual review: <strong>{{ summary.manual_review }}</strong>
+  </span>
+  <span class="summary-secondary-item">
+    Request better image: <strong>{{ summary.request_better_image }}</strong>
+  </span>
+  {% if summary.system_error_count %}
+    <span class="summary-secondary-item summary-secondary-item--error">
+      System errors: <strong id="summary-system-errors">{{ summary.system_error_count }}</strong>
+    </span>
+  {% else %}
+    <span class="summary-secondary-item" style="display:none;">
+      System errors: <strong id="summary-system-errors">0</strong>
+    </span>
+  {% endif %}
+</div>
+
+<p class="batch-progress-line">
+  Progress: <strong id="summary-done">{{ summary.complete }} / {{ summary.total }}</strong>
+  {% if workspace.status == "complete" %}
+    <span class="scope-badge" style="margin-left: 0.5rem;">Complete</span>
+  {% endif %}
+</p>

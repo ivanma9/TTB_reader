@@ -1,0 +1,4 @@
+{# Batch rows list. Requires: workspace, field_labels, reason_explanations #}
+{% for row in workspace.rows %}
+  {% include "_batch_row.html" %}
+{% endfor %}

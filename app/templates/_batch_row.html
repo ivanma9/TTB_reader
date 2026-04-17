@@ -1,0 +1,61 @@
+{# Single batch row card. Requires: row, field_labels, reason_explanations #}
+{% set qs = row.queue_state %}
+{% set result = row.result %}
+
+<div class="card batch-row-card" id="brow-{{ row.row_id }}">
+  <div class="batch-row-header">
+    <p class="batch-row-filename">{{ row.filename }}</p>
+    <div class="batch-row-chips">
+      <span class="status-chip queue-state-chip {{ qs }}">
+        {% if qs == "draft" %}Draft
+        {% elif qs == "queued" %}Queued
+        {% elif qs == "processing" %}Processing…
+        {% elif qs == "complete" %}Complete
+        {% elif qs == "processing_error" %}Error
+        {% endif %}
+      </span>
+
+      {% if result %}
+        {% set v = result.overall_verdict %}
+        <span class="status-chip brow-verdict {{ v }}">
+          {% if v == "match" %}Match
+          {% elif v == "mismatch" %}Mismatch
+          {% else %}Needs Review
+          {% endif %}
+        </span>
+      {% elif qs == "processing_error" %}
+        <span class="status-chip brow-verdict needs_review">Needs Review</span>
+      {% else %}
+        <span class="status-chip brow-verdict" style="visibility:hidden;">—</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if result %}
+    <p class="brow-ms">{{ result.processing_ms }} ms</p>
+  {% else %}
+    <p class="brow-ms"></p>
+  {% endif %}
+
+  {# Processing error warning #}
+  {% if qs == "processing_error" %}
+    <div class="batch-system-error brow-system-error">
+      <strong>Verification did not complete for this label.</strong>
+      {% if row.system_error %}
+        {{ row.system_error.message }}
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="batch-system-error brow-system-error" style="display:none;"></div>
+  {% endif %}
+
+  {# Drill-down for completed rows #}
+  {% if result %}
+    <details class="brow-drill-down">
+      <summary class="brow-drill-summary">Field details</summary>
+      <div class="brow-field-results">
+        {% include "_field_results.html" %}
+      </div>
+    </details>
+  {% endif %}
+</div>
