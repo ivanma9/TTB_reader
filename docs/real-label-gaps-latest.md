@@ -19,7 +19,7 @@ Cases: **43** (source: TTB COLA 2018 demo via Kaggle)
 
 | Field | match | mismatch | needs_review | correct_na | wrong_na |
 |-------|-------|----------|--------------|------------|----------|
-| brand_name | 9 | 22 | 12 | 0 | 0 |
+| brand_name | 22 | 9 | 12 | 0 | 0 |
 | class_type | 1 | 23 | 19 | 0 | 0 |
 | alcohol_content | 31 | 1 | 11 | 0 | 0 |
 | net_contents | 22 | 0 | 21 | 0 | 0 |
@@ -31,8 +31,8 @@ Cases: **43** (source: TTB COLA 2018 demo via Kaggle)
 
 
 ### brand_name
-- `wrong_value`: 22
 - `unreadable`: 12
+- `wrong_value`: 9
 
 ### class_type
 - `wrong_value`: 23

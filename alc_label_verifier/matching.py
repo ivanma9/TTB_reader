@@ -207,33 +207,113 @@ def _split_class_and_lower(
 
 
 def match_brand_name(lines: List[OcrLine], expected: str) -> FieldResult:
-    """Brand: best-matching line or multi-line concatenation from the top 3 OCR lines.
+    """Brand: widen the candidate window and prefer fuzzy-contains against expected.
 
-    Scanning the top 3 (rather than blindly taking lines[0]) handles rare
-    cases where a decoration or border artifact is detected above the brand text.
-    Multi-line concatenation handles brands that span two OCR lines.
+    Real labels frequently show the class word ("CACHACA") or region
+    ("OREGON") in the largest font, with the brand rendered smaller further
+    down. A partial_ratio score over the top-6 lines lets us pick the line
+    that *contains* the expected brand even when embedded in noise (e.g.
+    "BUCCO 1925") or positioned below a louder header. Falls back to the
+    prior top-3 concatenation + token_sort_ratio when no single line contains
+    the full expected string — preserves the multi-line brand case
+    (e.g. "OLD TOM" / "DISTILLERY").
     """
     if not lines:
         return FieldResult(status="needs_review", reason_code="unreadable")
 
     norm_exp = normalize_text(expected)
-    candidates = lines[:min(3, len(lines))]
+    exp_tokens = norm_exp.split()
+    pool = lines[: min(6, len(lines))]
 
-    # Build single-line and multi-line concatenation candidates
-    combined_candidates = [
-        (" ".join(l.text for l in candidates[:n]), min(l.confidence for l in candidates[:n]))
+    # A single line can only CONTAIN the expected brand if it's roughly the
+    # same length or longer. Allow a 4-char shortfall to absorb OCR typos
+    # that drop a character ('Darros' vs 'Darroze') or lose a space
+    # ('DANO\'SDANGEROUS' vs 'Dano\'s Dangerous'). The floor of 3 guards
+    # short expected brands (e.g. 'Bucco', '601') — without it, partial_ratio
+    # on 1–2 char fragments false-fires by symmetry.
+    min_line_len = max(3, len(norm_exp) - 4)
+    containing = [
+        (line, fuzz.partial_ratio(normalize_text(line.text), norm_exp))
+        for line in pool
+        if len(normalize_text(line.text)) >= min_line_len
+    ]
+    containing.sort(key=lambda ls: (ls[1], ls[0].confidence), reverse=True)
+
+    if containing and containing[0][1] >= 80:
+        best_line = containing[0][0]
+        # Anti-false-match guard: when expected has ≥2 tokens, require each
+        # expected token to fuzzy-appear in the line. Without this, expected
+        # "OLD FOX DISTILLERY" would silently match OCR "OLD TOM DISTILLERY"
+        # (partial_ratio ≈ 89) because matching prefix+suffix dominate the
+        # score — hiding a genuine brand-swap mismatch from reviewers. The
+        # per-token check catches the FOX→TOM swap because "fox" fuzzy-matches
+        # no token in the line.
+        line_tokens = normalize_text(best_line.text).split()
+        all_tokens_present = len(exp_tokens) < 2 or all(
+            max(
+                (fuzz.partial_ratio(tok, lt) for lt in line_tokens),
+                default=0,
+            ) >= 75
+            for tok in exp_tokens
+        )
+        if all_tokens_present:
+            if best_line.confidence < STANDARD_CONFIDENCE_THRESHOLD:
+                return FieldResult(status="needs_review", reason_code="unreadable")
+            # partial_ratio already confirmed the brand is inside the line;
+            # _compare_text would reject because token_sort_ratio penalises
+            # the extra tokens. Short-circuit to a match.
+            obs = best_line.text.strip() or None
+            return FieldResult(status="match", reason_code="normalized_match", observed_value=obs)
+
+    # Fallback 1: top-3 concatenation scored by token_sort_ratio — handles the
+    # multi-line-brand case where the expected string spans two adjacent lines
+    # (e.g. 'THE' / 'ORIGINAL').
+    candidates = lines[: min(3, len(lines))]
+    combined = [
+        (" ".join(l.text for l in candidates[:n]),
+         min(l.confidence for l in candidates[:n]))
         for n in range(1, len(candidates) + 1)
     ]
-
     best_text, best_conf = max(
-        combined_candidates,
+        combined,
         key=lambda tc: fuzz.token_sort_ratio(normalize_text(tc[0]), norm_exp),
     )
-
     if best_conf < STANDARD_CONFIDENCE_THRESHOLD:
         return FieldResult(status="needs_review", reason_code="unreadable")
+    prefix_result = _compare_text(best_text, expected, best_conf, use_fuzzy=True)
+    if prefix_result.status == "match":
+        return prefix_result
 
-    return _compare_text(best_text, expected, best_conf, use_fuzzy=True)
+    # Fallback 2: token_set_ratio over just the lines that contain at least
+    # one expected token as a whole word — handles brands whose tokens are
+    # scattered across non-adjacent lines in the top-6 ('ROCK' at line 1 and
+    # 'TOWN' at line 4 for expected 'Rock Town'). Whole-word matching
+    # prevents substring coincidences (e.g. 'Hill' in 'Kentucky Hills') from
+    # pulling unrelated lines into the contrib_text and blowing past the 95
+    # token_set_ratio gate.
+    scatter_tokens = [t for t in exp_tokens if len(t) >= 2]
+    if scatter_tokens:
+        contributing = [
+            l for l in pool
+            if any(
+                tok in normalize_text(l.text).split()
+                for tok in scatter_tokens
+            )
+        ]
+        if contributing:
+            contrib_text = " ".join(l.text for l in contributing)
+            contrib_conf = min(l.confidence for l in contributing)
+            if (
+                fuzz.token_set_ratio(normalize_text(contrib_text), norm_exp) >= 95
+                and contrib_conf >= STANDARD_CONFIDENCE_THRESHOLD
+            ):
+                return FieldResult(
+                    status="match",
+                    reason_code="normalized_match",
+                    observed_value=contrib_text.strip() or None,
+                )
+
+    return prefix_result
 
 
 def match_class_type(class_lines: List[OcrLine], expected: str) -> FieldResult:
