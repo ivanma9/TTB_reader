@@ -1,5 +1,11 @@
 """Build the distilled-spirits golden set and synthetic PNG fixtures."""
 
+# WARNING: This script's spec_cases() output no longer matches cases.jsonl.
+# gs_021 (heavy_glare) and gs_023 (skew) were manually relabeled to "match"
+# after PP-OCRv4 read them cleanly. Do NOT re-run this script to regenerate
+# cases.jsonl — it will overwrite the tuned golden set and break the eval gates.
+# To add new cases, append directly to cases.jsonl.
+
 from __future__ import annotations
 
 import json

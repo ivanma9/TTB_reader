@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 @dataclass
@@ -20,6 +20,8 @@ class FieldResult:
     status: str        # match | mismatch | needs_review | not_applicable
     reason_code: str   # exact_match | normalized_match | wrong_value | missing_required |
                        # not_applicable | unreadable | warning_prefix_error | warning_text_mismatch
+    extracted_text: Optional[str] = None
+    confidence: Optional[float] = None
 
 
 @dataclass

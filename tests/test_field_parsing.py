@@ -1,7 +1,15 @@
 """Unit tests for alcohol and net-contents numeric parsing."""
 
 import pytest
-from alc_label_verifier.matching import parse_alcohol, parse_net_contents, _alcohol_values_match, _net_values_match
+from alc_label_verifier.matching import (
+    parse_alcohol,
+    parse_net_contents,
+    _alcohol_values_match,
+    _net_values_match,
+    match_brand_name,
+    match_country_of_origin,
+)
+from alc_label_verifier.models import OcrLine
 
 
 class TestParseAlcohol:
@@ -94,3 +102,24 @@ class TestParseNetContents:
 
     def test_no_false_positive_on_proof(self):
         assert parse_net_contents("90 Proof") is None
+
+
+def test_parse_net_contents_uppercase_oz():
+    assert parse_net_contents("12 FL OZ") == (12.0, "oz")
+    assert parse_net_contents("12 OZ") == (12.0, "oz")
+    assert parse_net_contents("750 ML") == (750.0, "ml")
+
+
+def test_match_brand_name_multiline():
+    lines = [
+        OcrLine(text="OLD TOM", confidence=0.95, bbox=[], y_center=10, x_center=50),
+        OcrLine(text="DISTILLERY", confidence=0.95, bbox=[], y_center=30, x_center=50),
+    ]
+    result = match_brand_name(lines, "OLD TOM DISTILLERY")
+    assert result.status == "match"
+
+
+def test_match_country_of_origin_ocr_typo_anchor():
+    lines = [OcrLine(text="Couniry of Origin: Mexico", confidence=0.92, bbox=[], y_center=0, x_center=0)]
+    result = match_country_of_origin(lines, "Mexico", is_import=True)
+    assert result.status == "match"

@@ -44,7 +44,8 @@ _PROOF_RE = re.compile(r"\(?\s*(\d+(?:\.\d+)?)\s*(?:proof|PROOF)\s*\)?", re.IGNO
 # Require a word boundary before the number to avoid matching digits inside other tokens.
 # Bare 'l'/'L' is excluded: only 'mL', 'ML', 'ml' and 'L' (uppercase alone) are safe.
 _NET_RE = re.compile(
-    r"\b(\d+(?:\.\d+)?)\s*(fl\.?\s*oz|oz|mL|ML|ml|L)\b"
+    r"\b(\d+(?:\.\d+)?)\s*(fl\.?\s*oz|oz|mL|ML|ml|L)\b",
+    re.IGNORECASE,
 )
 
 
@@ -181,10 +182,11 @@ def _split_class_and_lower(
 
 
 def match_brand_name(lines: List[OcrLine], expected: str) -> FieldResult:
-    """Brand: best-matching line from the top 3 sorted OCR lines.
+    """Brand: best-matching line or multi-line concatenation from the top 3 OCR lines.
 
     Scanning the top 3 (rather than blindly taking lines[0]) handles rare
     cases where a decoration or border artifact is detected above the brand text.
+    Multi-line concatenation handles brands that span two OCR lines.
     """
     if not lines:
         return FieldResult(status="needs_review", reason_code="unreadable")
@@ -192,15 +194,21 @@ def match_brand_name(lines: List[OcrLine], expected: str) -> FieldResult:
     norm_exp = normalize_text(expected)
     candidates = lines[:min(3, len(lines))]
 
-    best_line = max(
-        candidates,
-        key=lambda l: fuzz.token_sort_ratio(normalize_text(l.text), norm_exp),
+    # Build single-line and multi-line concatenation candidates
+    combined_candidates = [
+        (" ".join(l.text for l in candidates[:n]), min(l.confidence for l in candidates[:n]))
+        for n in range(1, len(candidates) + 1)
+    ]
+
+    best_text, best_conf = max(
+        combined_candidates,
+        key=lambda tc: fuzz.token_sort_ratio(normalize_text(tc[0]), norm_exp),
     )
 
-    if best_line.confidence < STANDARD_CONFIDENCE_THRESHOLD:
+    if best_conf < STANDARD_CONFIDENCE_THRESHOLD:
         return FieldResult(status="needs_review", reason_code="unreadable")
 
-    return _compare_text(best_line.text, expected, best_line.confidence, use_fuzzy=True)
+    return _compare_text(best_text, expected, best_conf, use_fuzzy=True)
 
 
 def match_class_type(class_lines: List[OcrLine], expected: str) -> FieldResult:
@@ -325,6 +333,11 @@ def match_producer_name_address(
     return FieldResult(status="mismatch", reason_code="wrong_value")
 
 
+def _is_country_anchor(text: str) -> bool:
+    prefix = text.lower()[:25]  # only check first 25 chars
+    return fuzz.partial_ratio(prefix, "country of origin") >= 85
+
+
 def match_country_of_origin(
     lower_lines: List[OcrLine],
     expected: Optional[str],
@@ -334,10 +347,7 @@ def match_country_of_origin(
     if not is_import:
         return FieldResult(status="not_applicable", reason_code="not_applicable")
 
-    country_lines = [
-        l for l in lower_lines
-        if l.text.lower().startswith("country of origin")
-    ]
+    country_lines = [l for l in lower_lines if _is_country_anchor(l.text)]
 
     if not country_lines:
         if not lower_lines or _region_confidence(lower_lines) < STANDARD_CONFIDENCE_THRESHOLD:
@@ -351,8 +361,9 @@ def match_country_of_origin(
         return FieldResult(status="needs_review", reason_code="unreadable")
 
     raw = line.text
-    sep = raw.lower().find("country of origin")
-    after = raw[sep + len("country of origin"):].lstrip(": ").strip()
+    # Extract country value after the colon; handles OCR typos in the anchor phrase
+    colon_idx = raw.find(":")
+    after = raw[colon_idx + 1:].strip() if colon_idx != -1 else ""
 
     if not after:
         if expected:
@@ -427,6 +438,11 @@ def match_government_warning(
     # --- Body text comparison ---
     if norm_ocr_body == norm_exp_body:
         return FieldResult(status="match", reason_code="exact_match")
+
+    similarity = fuzz.ratio(norm_ocr_body, norm_exp_body)
+    if similarity >= 99:
+        # Near-identical — likely minor OCR noise, not a real deviation
+        return FieldResult(status="needs_review", reason_code="unreadable")
 
     return FieldResult(status="mismatch", reason_code="warning_text_mismatch")
 
