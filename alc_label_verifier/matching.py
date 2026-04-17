@@ -41,10 +41,16 @@ def normalize_text(text: str) -> str:
 _ABV_RE = re.compile(r"(\d+(?:\.\d+)?)\s*%")
 _PROOF_RE = re.compile(r"\(?\s*(\d+(?:\.\d+)?)\s*(?:proof|PROOF)\s*\)?", re.IGNORECASE)
 
-# Require a word boundary before the number to avoid matching digits inside other tokens.
-# Bare 'l'/'L' is excluded: only 'mL', 'ML', 'ml' and 'L' (uppercase alone) are safe.
-_NET_RE = re.compile(
-    r"\b(\d+(?:\.\d+)?)\s*(fl\.?\s*oz|oz|mL|ML|ml|L)\b",
+# Two-regex split so the bare single-char units ('L', 'mL', 'm1' and friends)
+# stay case-SENSITIVE — bare lowercase 'l' in prose would otherwise fire on
+# OCR misreads of 'I'/'1'. The long/word forms stay case-insensitive because
+# 'MILLILITERS'/'Liters' are unambiguous regardless of case.
+_NET_SHORT_RE = re.compile(
+    r"\b(\d+(?:\.\d+)?)\s*(mL|ML|ml|L|m1|M1)\b"
+)
+_NET_LONG_RE = re.compile(
+    r"\b(\d+(?:\.\d+)?)\s*"
+    r"(fl\.?\s*oz|fluid\s+ounces?|ounces?|oz|milliliters?|liters?)\b",
     re.IGNORECASE,
 )
 
@@ -63,18 +69,36 @@ def parse_alcohol(text: str) -> Optional[Tuple[float, Optional[float]]]:
 def parse_net_contents(text: str) -> Optional[Tuple[float, str]]:
     """Return (quantity_ml_or_oz, unit_string) or None if not parseable.
 
-    Normalises L → mL so '1 L' == '1000 mL'.
+    Normalises to two canonical units: 'ml' (with L → mL conversion) or 'oz'.
+    Accepts both symbol forms (mL, L, oz) and English words (milliliters,
+    liters, fluid ounces) — the CSV ground truth uses spelled-out forms while
+    real labels use symbol forms. Single-char/alias units (bare 'L', 'm1') are
+    range-checked to plausible bottle sizes so serial numbers and product
+    codes like 'serial 12345L' or 'lot 1m1-batch' don't false-fire.
     """
-    m = _NET_RE.search(text)
-    if not m:
+    # On dual-unit labels ('12 fl oz (355 mL)' or '750 mL (25.4 fl oz)') prefer
+    # whichever unit appears first — the primary declared unit by convention.
+    candidates = [m for m in (_NET_SHORT_RE.search(text), _NET_LONG_RE.search(text)) if m]
+    if not candidates:
         return None
+    m = min(candidates, key=lambda mm: mm.start())
     qty = float(m.group(1))
     unit_raw = m.group(2).lower().replace(" ", "").replace(".", "")
-    if unit_raw == "l":
+    if unit_raw in ("l", "liter", "liters"):
+        # Bare 'L' matches anywhere a digit is followed by an upper-case L,
+        # including serial numbers. Real packaging is 0.1–10 L.
+        if unit_raw == "l" and not (0.1 <= qty <= 10):
+            return None
         return (qty * 1000, "ml")
-    if unit_raw.startswith("fl") or unit_raw == "oz":
+    if unit_raw.startswith("fl") or unit_raw in ("oz", "ounce", "ounces", "fluidounce", "fluidounces"):
         return (qty, "oz")
-    return (qty, "ml")
+    if unit_raw in ("m1", "ml", "milliliter", "milliliters"):
+        # 'm1'/'M1' is only plausible for real bottle sizes (≥ 50 mL); reject
+        # small-qty matches that would otherwise fire on product codes.
+        if unit_raw == "m1" and qty < 50:
+            return None
+        return (qty, "ml")
+    return None
 
 
 def _alcohol_values_match(a: Tuple[float, Optional[float]], b: Tuple[float, Optional[float]]) -> bool:
