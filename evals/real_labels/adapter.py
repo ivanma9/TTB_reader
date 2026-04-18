@@ -263,15 +263,12 @@ def build_cases_with_corrections(
         cid = case["inputs"]["case_id"]
         row = corrections_by_id.get(cid)
         if row:
-            applied: Dict[str, Any] = {}
             for field, value in row["corrections"].items():
                 if field in CORRECTIBLE_FIELDS and value:
                     case["inputs"]["application"][field] = value
-                    applied[field] = value
-            if applied:
-                corrected += 1
+            corrected += 1
             case["metadata"]["field_sources"] = _tag_field_sources(
-                case["inputs"]["application"], applied
+                case["inputs"]["application"], row["corrections"]
             )
             case["metadata"]["labeled_by"] = row.get("labeled_by")
             case["metadata"]["labeled_at"] = row.get("labeled_at")
