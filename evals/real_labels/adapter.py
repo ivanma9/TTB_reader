@@ -14,6 +14,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, Optional
 
+from scripts.label_real_cases import load_corrections as _load_corrections
+
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE_PATH = ROOT / "ttb_eval" / "cases.jsonl"
 OUTPUT_PATH = ROOT / "evals" / "real_labels" / "cases.jsonl"
@@ -188,46 +190,6 @@ def build_case(raw: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
         },
     }
 
-
-def build_cases(
-    source: Path = SOURCE_PATH,
-    output: Path = OUTPUT_PATH,
-) -> Dict[str, Any]:
-    with source.open("r", encoding="utf-8") as fh:
-        raw_cases = [json.loads(line) for line in fh if line.strip()]
-
-    built: List[Dict[str, Any]] = []
-    skipped: List[str] = []
-    for raw in raw_cases:
-        case = build_case(raw)
-        if case is None:
-            skipped.append(str(raw.get("ttb_id")))
-            continue
-        built.append(case)
-
-    output.parent.mkdir(parents=True, exist_ok=True)
-    with output.open("w", encoding="utf-8") as fh:
-        for case in built:
-            fh.write(json.dumps(case) + "\n")
-
-    return {
-        "source": str(source),
-        "output": str(output),
-        "built": len(built),
-        "skipped": skipped,
-    }
-
-
-def _load_corrections(path: Path) -> Dict[str, Dict[str, Any]]:
-    if not path.exists():
-        return {}
-    out: Dict[str, Dict[str, Any]] = {}
-    for raw in path.read_text(encoding="utf-8").splitlines():
-        if not raw.strip():
-            continue
-        row = json.loads(raw)
-        out[row["case_id"]] = row
-    return out
 
 
 def _tag_field_sources(
