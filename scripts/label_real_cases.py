@@ -88,7 +88,7 @@ def _dump_ocr(label: str, image_rel: Optional[str]) -> None:
         for line in extract_lines(img):
             print(f"    {line.confidence:.2f}  {line.text}")
     except Exception as e:
-        print(f"    OCR failed: {e}")
+        print(f"    OCR failed ({type(e).__name__}): {e}")
 
 
 def _prompt(current: Optional[str], field: str) -> Optional[str]:
