@@ -27,6 +27,19 @@ Cases: **43** (source: TTB COLA 2018 demo via Kaggle)
 | country_of_origin | 3 | 9 | 10 | 21 | 0 |
 | government_warning | 0 | 4 | 39 | 0 | 0 |
 
+## Per-field status — hand-labeled subset only
+
+Cases in subset: 2
+| Field | match | mismatch | needs_review | not_applicable |
+|-------|-------|----------|--------------|----------------|
+| brand_name | 1 | 0 | 1 | 0 |
+| class_type | 0 | 1 | 1 | 0 |
+| alcohol_content | 1 | 0 | 1 | 0 |
+| net_contents | 1 | 0 | 1 | 0 |
+| producer_name_address | 0 | 1 | 1 | 0 |
+| country_of_origin | 0 | 1 | 1 | 0 |
+| government_warning | 0 | 1 | 1 | 0 |
+
 ## Top failure reasons per field
 
 

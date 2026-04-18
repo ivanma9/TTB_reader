@@ -12,11 +12,13 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Optional
+from typing import Any, Dict, List, Mapping, Optional
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE_PATH = ROOT / "ttb_eval" / "cases.jsonl"
 OUTPUT_PATH = ROOT / "evals" / "real_labels" / "cases.jsonl"
+CORRECTIONS_PATH = ROOT / "evals" / "real_labels" / "corrections.jsonl"
+CORRECTIBLE_FIELDS = ("class_type", "producer_name_address")
 
 CANONICAL_WARNING = (
     "GOVERNMENT WARNING: (1) ACCORDING TO THE SURGEON GENERAL, WOMEN SHOULD "
@@ -216,6 +218,85 @@ def build_cases(
     }
 
 
+def _load_corrections(path: Path) -> Dict[str, Dict[str, Any]]:
+    if not path.exists():
+        return {}
+    out: Dict[str, Dict[str, Any]] = {}
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        if not raw.strip():
+            continue
+        row = json.loads(raw)
+        out[row["case_id"]] = row
+    return out
+
+
+def _tag_field_sources(
+    application: Mapping[str, Any],
+    corrections: Mapping[str, Any],
+) -> Dict[str, str]:
+    return {
+        field: ("hand_labeled" if field in corrections else "csv")
+        for field in application
+    }
+
+
+def build_cases_with_corrections(
+    source: Path = SOURCE_PATH,
+    corrections: Path = CORRECTIONS_PATH,
+    output: Path = OUTPUT_PATH,
+) -> Dict[str, Any]:
+    corrections_by_id = _load_corrections(corrections)
+
+    with source.open("r", encoding="utf-8") as fh:
+        raw_cases = [json.loads(line) for line in fh if line.strip()]
+
+    built: List[Dict[str, Any]] = []
+    skipped: List[str] = []
+    corrected = 0
+
+    for raw in raw_cases:
+        case = build_case(raw)
+        if case is None:
+            skipped.append(str(raw.get("ttb_id")))
+            continue
+
+        cid = case["inputs"]["case_id"]
+        row = corrections_by_id.get(cid)
+        if row:
+            applied: Dict[str, Any] = {}
+            for field, value in row["corrections"].items():
+                if field in CORRECTIBLE_FIELDS and value:
+                    case["inputs"]["application"][field] = value
+                    applied[field] = value
+            if applied:
+                corrected += 1
+            case["metadata"]["field_sources"] = _tag_field_sources(
+                case["inputs"]["application"], applied
+            )
+            case["metadata"]["labeled_by"] = row.get("labeled_by")
+            case["metadata"]["labeled_at"] = row.get("labeled_at")
+        else:
+            case["metadata"]["field_sources"] = _tag_field_sources(
+                case["inputs"]["application"], {}
+            )
+
+        built.append(case)
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("w", encoding="utf-8") as fh:
+        for case in built:
+            fh.write(json.dumps(case) + "\n")
+
+    return {
+        "source": str(source),
+        "corrections": str(corrections),
+        "output": str(output),
+        "built": len(built),
+        "corrected_cases": corrected,
+        "skipped": skipped,
+    }
+
+
 if __name__ == "__main__":
-    summary = build_cases()
+    summary = build_cases_with_corrections()
     print(json.dumps(summary, indent=2))

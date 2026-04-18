@@ -41,10 +41,12 @@ def main() -> int:
 
     rows: List[Dict[str, Any]] = []
     field_status_counts: Dict[str, Counter] = defaultdict(Counter)
+    labeled_field_status_counts: Dict[str, Counter] = defaultdict(Counter)
     field_na_split: Dict[str, Counter] = defaultdict(Counter)
     field_reason_on_fail: Dict[str, Counter] = defaultdict(Counter)
     verdict_counter: Counter = Counter()
     action_counter: Counter = Counter()
+    labeled_case_count = 0
 
     for case in cases:
         case_id = case["inputs"]["case_id"]
@@ -54,10 +56,16 @@ def main() -> int:
         verdict_counter[actual.get("overall_verdict")] += 1
         action_counter[actual.get("recommended_action")] += 1
 
+        labeled_by = case["metadata"].get("labeled_by")
+        is_labeled = bool(labeled_by)
+        if is_labeled:
+            labeled_case_count += 1
+
         row: Dict[str, Any] = {
             "case_id": case_id,
             "ttb_id": case["metadata"].get("ttb_id"),
             "is_import": case["inputs"]["application"].get("is_import"),
+            "labeled_by": labeled_by,
             "expected_verdict": expected["overall_verdict"],
             "actual_verdict": actual.get("overall_verdict"),
             "expected_action": expected["recommended_action"],
@@ -78,6 +86,8 @@ def main() -> int:
             row[f"{field}_observed"] = observed
 
             field_status_counts[field][act_status] += 1
+            if is_labeled:
+                labeled_field_status_counts[field][act_status] += 1
             if act_status == "not_applicable":
                 bucket = "correct_na" if exp_status == "not_applicable" else "wrong_na"
                 field_na_split[field][bucket] += 1
@@ -119,6 +129,17 @@ def main() -> int:
             f"| {field} | {c.get('match',0)} | {c.get('mismatch',0)} | "
             f"{c.get('needs_review',0)} | {na.get('correct_na',0)} | "
             f"{na.get('wrong_na',0)} |"
+        )
+
+    lines.append("\n## Per-field status — hand-labeled subset only\n")
+    lines.append(f"Cases in subset: {labeled_case_count}")
+    lines.append("| Field | match | mismatch | needs_review | not_applicable |")
+    lines.append("|-------|-------|----------|--------------|----------------|")
+    for field in FIELD_NAMES:
+        c = labeled_field_status_counts[field]
+        lines.append(
+            f"| {field} | {c.get('match', 0)} | {c.get('mismatch', 0)} | "
+            f"{c.get('needs_review', 0)} | {c.get('not_applicable', 0)} |"
         )
 
     lines.append("\n## Top failure reasons per field\n")
