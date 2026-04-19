@@ -82,6 +82,6 @@
 | Production hardening could become a distraction | Document future concerns without implementing them now | This preserves credibility while respecting the exercise scope |
 
 ## Default Release Decisions
-- Deployment target: use a single-container deployment on Render for the first public demo so OCR dependencies can run without serverless packaging constraints.
+- Deployment target: use a single-container deployment on Railway for the first public demo so OCR dependencies can run without serverless packaging constraints.
 - Demo data: ship documented sample fixtures and matching expected values in the repo or a clearly labeled guided sample path in the app instead of building a separate sample-data mode.
 - Walkthrough format: written walkthrough only for the required submission. Record a video only if all smoke tests are already green.

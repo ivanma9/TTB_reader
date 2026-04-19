@@ -27,7 +27,7 @@ RUN pip install --no-cache-dir "paddlepaddle>=2.6.0" && \
 
 # Bootstrap model weights at build time so the image is immutable and the
 # runtime container never depends on a live download from Baidu's CDN.
-# Build on a real x86_64 host (Render, GitHub Actions, any Linux CI) so QEMU
+# Build on a real x86_64 host (Railway, GitHub Actions, any Linux CI) so QEMU
 # does not need to emulate AVX2. If you are iterating locally on arm64 and
 # only need the app to boot, pass --build-arg ALLOW_MISSING_MODELS=true.
 ARG ALLOW_MISSING_MODELS=false
@@ -45,6 +45,6 @@ ENV ALC_EVAL_TARGET=alc_label_verifier.adapter:target
 
 EXPOSE 8000
 
-# Shell form so ${PORT} expands at runtime. Railway/Fly/most PaaS inject PORT;
-# local and Render default to 8000 via the fallback.
+# Shell form so ${PORT} expands at runtime. Railway injects PORT; local
+# runs fall back to 8000.
 CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

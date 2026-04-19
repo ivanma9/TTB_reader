@@ -14,7 +14,7 @@
 
 ## Locked Decisions
 - Reviewer flow: single-label only. Batch stays out unless it is already complete and stable before M4 work begins.
-- Deployment target: single-container Render deployment using the Dockerfile.
+- Deployment target: single-container Railway deployment using the Dockerfile.
 - Local setup posture: Docker-first quick start for reliable reproduction; native setup is secondary and documented only where it is actually supported.
 - Demo data source: reuse curated golden-set fixtures and their matching application payloads instead of inventing a separate demo-only dataset.
 - Smoke-test boundary: automate service health, seeded sample submission, eval harness, and deployed availability; keep README dry run as a separate manual release gate.
@@ -25,7 +25,7 @@
 3. A short approach note in `docs/approach.md` covering architecture, tradeoffs, scope limits, and privacy posture.
 4. Guided sample fixtures with matching expected values surfaced in the app or documented in the repo.
 5. `scripts/smoke_test.sh` for local and deployed smoke validation.
-6. Deployment configuration updates needed for Render and container startup.
+6. Deployment configuration updates needed for Railway and container startup.
 
 ## Architecture for M4
 - FastAPI remains the web layer because `pyproject.toml` already includes the `web` optional dependencies.
@@ -55,7 +55,7 @@
   - enter or prefill the seven tracked application fields
   - submit to the real verifier
   - render overall verdict, recommended action, and field-by-field results
-- Add a lightweight `GET /healthz` endpoint for smoke checks and Render validation.
+- Add a lightweight `GET /healthz` endpoint for smoke checks and Railway validation.
 - Keep the UI narrow and demo-oriented; do not add batch controls, auth, persistence, or OCR-debug-heavy panels.
 
 **Acceptance**
@@ -87,7 +87,7 @@
 **Files**
 - Modify: `Dockerfile`
 - Modify: `pyproject.toml` only if dependency groups need correction
-- Optionally create: `render.yaml`
+- Optionally create: `railway.json`
 - Create: `README.md`
 
 **Implementation**
@@ -158,7 +158,7 @@
 - No new product scope files beyond docs and smoke tooling
 
 **Implementation**
-- Deploy the container to Render.
+- Deploy the container to Railway.
 - Confirm public access without credentials.
 - Run the release gates defined in PRD 04:
   - README dry run from a clean shell or fresh container context
@@ -177,7 +177,7 @@ python3 -m pytest tests/test_web.py -q
 docker build -t alc-levels .
 docker run --rm -p 8000:8000 alc-levels
 SMOKE_BASE_URL=http://localhost:8000 bash scripts/smoke_test.sh
-SMOKE_BASE_URL=https://<render-app>.onrender.com bash scripts/smoke_test.sh
+SMOKE_BASE_URL=https://<railway-app>.up.railway.app bash scripts/smoke_test.sh
 ```
 
 ## Recommended Execution Order
@@ -186,7 +186,7 @@ SMOKE_BASE_URL=https://<render-app>.onrender.com bash scripts/smoke_test.sh
 3. Switch the Dockerfile to app-serving mode.
 4. Write README and approach docs against the real local run path.
 5. Add and stabilize `scripts/smoke_test.sh`.
-6. Deploy to Render and run the final release gates.
+6. Deploy to Railway and run the final release gates.
 
 ## Cut Line
 - Must ship:
@@ -197,7 +197,7 @@ SMOKE_BASE_URL=https://<render-app>.onrender.com bash scripts/smoke_test.sh
   - smoke test
   - deployed URL
 - Nice to have only if everything above is already green:
-  - `render.yaml`
+  - `railway.json`
   - extra sample cases beyond the minimum guided set
   - video walkthrough
 
