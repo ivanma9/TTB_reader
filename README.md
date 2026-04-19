@@ -17,13 +17,16 @@ action (`accept`, `manual_review`, or `request_better_image`).
 
 ## Deployed demo
 
-A hosted version of the single-label workbench is available at:
-
-> _Deployed URL will be added here once the final candidate is live._
+**https://ttbreader-production.up.railway.app**
 
 To exercise it end-to-end in under two minutes, click one of the **Try a
 sample** cards on the landing page — each runs the verifier against a
-pre-loaded golden-set label with no upload required.
+pre-loaded golden-set label with no upload required. No account, no
+upload, no setup.
+
+The deployment uses the same Dockerfile in this repo, built on Railway's
+x86_64 infrastructure so PaddleOCR model weights are baked into the image
+at build time rather than fetched at runtime.
 
 ## Quick start (Docker)
 

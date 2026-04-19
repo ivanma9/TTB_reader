@@ -79,18 +79,20 @@ grep -q "Verification Results" /tmp/smoke-demo-body.html \
   || fail "POST /demo/gs_001 did not render a verdict"
 rm -f /tmp/smoke-demo-body.html
 
-# 3. Golden-set eval against the real verifier (runs in-process, no server needed)
-echo "[smoke] running golden-set eval ..."
-ALC_EVAL_TARGET="${ALC_EVAL_TARGET:-alc_label_verifier.adapter:target}" \
-  python3 evals/run_golden_set.py >"$EVAL_LOG" 2>&1 || {
-    tail -n 40 "$EVAL_LOG" >&2
-    fail "golden-set eval did not exit cleanly"
-  }
-
+# 3. Golden-set eval against the real verifier (runs in-process, no server needed).
+#    Only in local mode — when SMOKE_BASE_URL is set, POST /demo/gs_001 already
+#    exercised the deployed verifier, and the local Python env may not have
+#    paddleocr installed.
 if $LOCAL_MODE; then
+  echo "[smoke] running golden-set eval ..."
+  ALC_EVAL_TARGET="${ALC_EVAL_TARGET:-alc_label_verifier.adapter:target}" \
+    python3 evals/run_golden_set.py >"$EVAL_LOG" 2>&1 || {
+      tail -n 40 "$EVAL_LOG" >&2
+      fail "golden-set eval did not exit cleanly"
+    }
   echo "[smoke] local mode: all checks passed"
 else
-  echo "[smoke] deployed mode (${BASE_URL}): all checks passed"
+  echo "[smoke] deployed mode (${BASE_URL}): web checks passed (eval skipped; run locally with no SMOKE_BASE_URL)"
 fi
 
 echo "[SMOKE PASS]"
