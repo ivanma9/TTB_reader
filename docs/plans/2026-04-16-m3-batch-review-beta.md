@@ -159,10 +159,10 @@ Unexpected batch-processing failures should not masquerade as OCR unreadability.
         "code": "processing_error",
         "message": "Unexpected processing error for this label. Review manually.",
     },
-    "display_verdict": "needs_review",
-    "display_action": "manual_review",
 }
 ```
+
+`display_verdict` and `display_action` are **not** stored on the row. The template hardcodes the verdict chip for `queue_state == "processing_error"`, and `compute_summary` branches on `queue_state` directly. These are the single sources of truth for derived display state on error rows.
 
 UI guidance for `processing_error` rows:
 

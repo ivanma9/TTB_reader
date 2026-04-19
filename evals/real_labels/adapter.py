@@ -179,7 +179,7 @@ def build_case(raw: Mapping[str, Any]) -> Optional[Dict[str, Any]]:
             "expected_tags": _expected_tags(is_import),
         },
         "metadata": {
-            "source": "ttb_cola_2017",
+            "source": "ttb_cola_2018",
             "ttb_id": ttb_id,
             "origin": origin,
             "front_image": front["path"],

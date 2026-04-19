@@ -307,6 +307,24 @@ class TestBatchQueue:
         complete = [r for r in data3["rows"] if r["queue_state"] == "complete"]
         assert len(complete) == 2
 
+    def test_processing_error_json_shape(self, client):
+        batch_id = self._stage_and_run(client, n=1)
+
+        with patch("app.main.verify_label", side_effect=RuntimeError("ocr failure")):
+            r = client.post(f"/batch/{batch_id}/process-next")
+
+        assert r.status_code == 200
+        data = r.json()
+        error_rows = [row for row in data["rows"] if row["queue_state"] == "processing_error"]
+        assert len(error_rows) == 1
+        err_row = error_rows[0]
+        assert err_row["system_error"] is not None
+        assert err_row["system_error"]["code"] == "processing_error"
+        assert isinstance(err_row["system_error"]["message"], str)
+        assert data["done"] is True
+        assert data["summary"]["system_error_count"] == 1
+        assert data["summary"]["needs_review"] == 1
+
     def test_process_next_404_for_unknown_batch(self, client):
         r = client.post("/batch/b_unknown123/process-next")
         assert r.status_code == 404

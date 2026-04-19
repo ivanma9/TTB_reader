@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import os
 import shutil
 import tempfile
@@ -318,6 +319,9 @@ async def batch_session(
         )
 
     # Stream each file directly to disk; enforce per-file and total limits
+    # File type is enforced client-side only (accept="image/*"); non-image uploads
+    # are staged with a safe .png suffix and surface as processing_error rows when
+    # verify_label fails to decode them.
     temp_dir = tempfile.mkdtemp(prefix="alc-batch-")
     rows: list[dict] = []
     total_bytes = 0
@@ -338,6 +342,7 @@ async def batch_session(
                         break
                     file_bytes_written += len(chunk)
                     if file_bytes_written > STORE_MAX_FILE_BYTES:
+                        shutil.rmtree(temp_dir, ignore_errors=True)
                         return _batch_error(
                             request,
                             [f"'{upload.filename}' exceeds the 20 MB per-file limit."],
@@ -345,6 +350,7 @@ async def batch_session(
                         )
                     total_bytes += len(chunk)
                     if total_bytes > STORE_MAX_BATCH_BYTES:
+                        shutil.rmtree(temp_dir, ignore_errors=True)
                         return _batch_error(
                             request,
                             ["Total upload size exceeds the 100 MB batch limit."],
@@ -482,7 +488,7 @@ async def batch_process_next(batch_id: str) -> JSONResponse:
 
     try:
         application = build_application_payload(row["form_values"])
-        result = verify_label(row["staged_path"], application)
+        result = await asyncio.to_thread(verify_label, row["staged_path"], application)
         mark_row_complete(workspace, row_id, result)
     except Exception as exc:
         mark_row_processing_error(
