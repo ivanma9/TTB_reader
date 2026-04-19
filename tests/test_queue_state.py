@@ -8,6 +8,7 @@ import pytest
 
 from app.queue_state import (
     QueueItem,
+    QueueLoadError,
     QueueStatus,
     ReviewerAction,
     add_item,
@@ -182,6 +183,33 @@ class TestPersistence:
         assert "queue.json" in siblings
         assert not any(s.endswith(".json.tmp") for s in siblings)
 
+    def test_load_malformed_json_raises_queue_load_error(self, tmp_path):
+        path = tmp_path / "queue.json"
+        path.write_text("{not json")
+        with pytest.raises(QueueLoadError):
+            load_from_disk(path)
+
+    def test_load_wrong_top_level_shape_raises(self, tmp_path):
+        path = tmp_path / "queue.json"
+        path.write_text('["not", "an", "object"]')
+        with pytest.raises(QueueLoadError):
+            load_from_disk(path)
+
+    def test_load_non_list_items_raises(self, tmp_path):
+        path = tmp_path / "queue.json"
+        path.write_text('{"items": {"gs_001": "nope"}}')
+        with pytest.raises(QueueLoadError):
+            load_from_disk(path)
+
+    def test_load_preserves_memory_on_error(self, tmp_path):
+        path = tmp_path / "queue.json"
+        path.write_text("{garbage")
+        before = {i.id for i in list_items()}
+        with pytest.raises(QueueLoadError):
+            load_from_disk(path)
+        after = {i.id for i in list_items()}
+        assert before == after
+
 
 class TestAutosave:
     def test_add_item_autosaves(self, tmp_path):
@@ -262,3 +290,17 @@ class TestInitQueueState:
         init_queue_state()
         ids = {item.id for item in list_items()}
         assert ids == {"gs_001", "gs_003", "gs_020", "gs_007"}
+
+    def test_malformed_persist_file_reseeds(self, monkeypatch, tmp_path):
+        from app.main import init_queue_state
+
+        path = tmp_path / "queue.json"
+        path.write_text("{garbage")
+        monkeypatch.setenv("QUEUE_PERSIST_PATH", str(path))
+        configure_persistence(None)
+        reset_queue()
+        init_queue_state()
+        ids = {item.id for item in list_items()}
+        assert ids == {"gs_001", "gs_003", "gs_020"}
+        # And the bad file should have been overwritten with a valid one
+        assert path.read_text().startswith("{")

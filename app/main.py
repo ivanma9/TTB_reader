@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import shutil
 import tempfile
@@ -33,6 +34,7 @@ from app.batch_store import (
     update_row_form_values,
 )
 from app.queue_state import (
+    QueueLoadError,
     QueueStatus,
     ReviewerAction,
     configure_persistence,
@@ -41,6 +43,7 @@ from app.queue_state import (
     load_from_disk,
     mark_complete,
     mark_in_review,
+    reset_queue,
     save_to_disk,
     seed_queue,
 )
@@ -77,18 +80,31 @@ REASON_EXPLANATIONS = {
 }
 
 
+log = logging.getLogger(__name__)
+
+
 def init_queue_state() -> None:
-    """Seed + wire persistence based on QUEUE_PERSIST_PATH env var."""
+    """Seed + wire persistence based on QUEUE_PERSIST_PATH env var.
+
+    On a malformed persist file, logs a warning and re-seeds rather than
+    crashing the app. An empty `items: []` file is treated as "re-seed me".
+    """
     persist_path = os.getenv("QUEUE_PERSIST_PATH")
-    if persist_path:
-        p = Path(persist_path)
-        configure_persistence(p)
-        load_from_disk(p)
-        if not list_items():
-            seed_queue()
-            save_to_disk(p)
-    else:
+    if not persist_path:
         seed_queue()
+        return
+
+    p = Path(persist_path)
+    configure_persistence(p)
+    log.info("queue persistence enabled at %s", p)
+    try:
+        load_from_disk(p)
+    except QueueLoadError as exc:
+        log.warning("queue persist file unreadable, re-seeding: %s", exc)
+        reset_queue()
+    if not list_items():
+        seed_queue()
+        save_to_disk(p)
 
 
 @asynccontextmanager

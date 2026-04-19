@@ -201,12 +201,25 @@ def save_to_disk(path: Path) -> None:
     os.replace(tmp_path, path)
 
 
+class QueueLoadError(Exception):
+    """Raised when a persisted queue file is malformed or has the wrong schema."""
+
+
 def load_from_disk(path: Path) -> None:
+    """Replace in-memory queue with contents of path. Raises QueueLoadError on malformed file."""
     path = Path(path)
     if not path.exists():
         return
-    data = json.loads(path.read_text())
+    try:
+        data = json.loads(path.read_text())
+        if not isinstance(data, dict):
+            raise ValueError(f"expected object at top level, got {type(data).__name__}")
+        raw_items = data.get("items", [])
+        if not isinstance(raw_items, list):
+            raise ValueError(f"'items' must be a list, got {type(raw_items).__name__}")
+        parsed = [_deserialize_item(raw) for raw in raw_items]
+    except (json.JSONDecodeError, KeyError, ValueError, TypeError) as exc:
+        raise QueueLoadError(f"could not load queue from {path}: {exc}") from exc
     _QUEUE.clear()
-    for raw in data.get("items", []):
-        item = _deserialize_item(raw)
+    for item in parsed:
         _QUEUE[item.id] = item
