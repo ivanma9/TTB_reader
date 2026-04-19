@@ -156,6 +156,33 @@ def _fill_queue_from_pool(exclude: set[str] | None = None) -> None:
         )
 
 
+class TestQueueLandingSimulateButton:
+    def test_landing_shows_simulate_button(self, client):
+        r = client.get("/")
+        assert 'action="/queue/simulate"' in r.text
+        assert "Simulate submission" in r.text
+
+    def test_button_not_disabled_by_default(self, client):
+        r = client.get("/")
+        # Grab the button opening tag; it should not have a disabled attribute
+        import re as _re
+        m = _re.search(r'<button[^>]*Simulate submission', r.text)
+        # Fallback: find the button tag anywhere
+        button_tag = _re.search(r'<button[^>]*>\s*\+?\s*Simulate submission', r.text)
+        assert button_tag, "could not find simulate button in rendered HTML"
+        assert "disabled" not in button_tag.group(0)
+
+    def test_button_disabled_when_pool_exhausted(self, client):
+        reset_queue()
+        _fill_queue_from_pool()
+        r = client.get("/")
+        import re as _re
+        button_tag = _re.search(r'<button[^>]*>\s*\+?\s*Simulate submission', r.text)
+        assert button_tag, "could not find simulate button in rendered HTML"
+        assert "disabled" in button_tag.group(0)
+        assert "All demo cases" in r.text  # tooltip
+
+
 class TestQueueSimulate:
     def test_simulate_adds_item_and_redirects(self, client):
         r = client.post("/queue/simulate", follow_redirects=False)

@@ -760,6 +760,13 @@ main {
   border-color: var(--outline);
 }
 
+/* ── Queue toolbar ───────────────────────────────────── */
+.queue-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
 /* ── Queue table ─────────────────────────────────────── */
 
 /* Queue pages (landing + item detail) use a wider main — the table and the

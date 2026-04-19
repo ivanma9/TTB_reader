@@ -38,6 +38,15 @@ This is a UX decision, not a data-model change — the underlying verifier
 still takes an image path and an application payload and returns a
 structured verdict.
 
+The queue is seeded with three hand-crafted items that showcase the three
+main verdicts (`match`, `mismatch`, `needs_review`). A **Simulate
+submission** button on the landing page lets evaluators fill the queue
+with additional synthetic cases drawn from the 28-item golden set, each
+labeled with a fabricated COLA id and submitter. This is an intentional
+demo affordance, not a production submission channel — it exists only so
+an evaluator can demo the flow at scale without upstream data. In
+production, applications flow from COLA; reviewers never create them.
+
 ## Why local-first OCR and deterministic validation
 
 **Reviewers cannot trust a stochastic black box for a compliance task.** The

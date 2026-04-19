@@ -50,7 +50,7 @@ from app.queue_state import (
     save_to_disk,
     seed_queue,
 )
-from app.simulation_pool import derive_submitter, pick_unqueued_case
+from app.simulation_pool import POOL_CASES, derive_submitter, pick_unqueued_case
 from app.web_helpers import build_application_payload, validate_expected_data
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -131,10 +131,13 @@ def healthz() -> JSONResponse:
 
 @app.get("/", response_class=HTMLResponse)
 async def queue_landing(request: Request) -> HTMLResponse:
+    items = list_items()
+    queued_case_ids = {item.id for item in items}
+    pool_exhausted = bool(POOL_CASES) and queued_case_ids.issuperset(POOL_CASES.keys())
     return templates.TemplateResponse(
         request=request,
         name="queue.html",
-        context={"items": list_items()},
+        context={"items": items, "pool_exhausted": pool_exhausted},
     )
 
 

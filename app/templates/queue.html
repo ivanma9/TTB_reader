@@ -28,6 +28,16 @@
     </p>
   </section>
 
+  <form method="post" action="/queue/simulate" class="queue-toolbar">
+    <button
+      type="submit"
+      class="btn-primary"
+      {% if pool_exhausted %}disabled title="All demo cases are already in the queue."{% endif %}
+    >
+      + Simulate submission
+    </button>
+  </form>
+
   <div class="card">
     <table class="queue-table">
       <thead>

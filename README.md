@@ -45,6 +45,29 @@ The three seeded items:
 Status badges persist in memory for the life of the process; restarting the
 app resets all items back to `Pending`.
 
+### Simulate more submissions
+
+To demo with more variety, click **+ Simulate submission** on the landing
+page. Each click picks a random unqueued golden-set case (28 total) and
+pushes it onto the queue with a fabricated COLA id and submitter. The
+button disables itself once all 28 are queued. This is a demo affordance
+only — in production, applications arrive from COLA upstream; reviewers
+never create them.
+
+### Persisting the queue across restarts
+
+By default the queue is in-memory and resets on process restart. To persist
+across restarts, set `QUEUE_PERSIST_PATH` to a writable JSON file path:
+
+```bash
+QUEUE_PERSIST_PATH=/data/queue.json uvicorn app.main:app
+```
+
+On Railway, pair this with a mounted volume so the file survives redeploys;
+otherwise it lives in ephemeral container storage and is wiped per deploy.
+If the file is missing at boot the queue re-seeds with the three defaults;
+if it's malformed the app logs a warning and re-seeds rather than crashing.
+
 ### Bring-your-own label
 
 For evaluators who want to poke the verifier at arbitrary inputs, the
