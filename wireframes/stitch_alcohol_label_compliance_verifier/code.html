@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Reviewer Workstation</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-dim": "#4f0116",
+                        "on-primary-container": "#194da7",
+                        "primary": "#2b5bb5",
+                        "on-surface": "#0a3747",
+                        "surface-container-low": "#e7f6ff",
+                        "on-primary-fixed-variant": "#2858b2",
+                        "tertiary": "#a93900",
+                        "inverse-surface": "#041015",
+                        "surface-tint": "#2b5bb5",
+                        "on-background": "#0a3747",
+                        "surface-container": "#d9f2ff",
+                        "surface-dim": "#b2e1f8",
+                        "on-surface-variant": "#3e6475",
+                        "tertiary-dim": "#953200",
+                        "tertiary-fixed": "#fc6018",
+                        "secondary-fixed-dim": "#c1d8e4",
+                        "on-secondary-container": "#40555f",
+                        "on-secondary": "#f2faff",
+                        "on-tertiary-fixed-variant": "#3d1000",
+                        "tertiary-fixed-dim": "#ea5405",
+                        "on-tertiary-container": "#2a0800",
+                        "on-secondary-fixed-variant": "#495f69",
+                        "inverse-primary": "#759efd",
+                        "surface-container-high": "#cdedfe",
+                        "surface-variant": "#c1e8fd",
+                        "secondary-dim": "#415660",
+                        "primary-container": "#d9e2ff",
+                        "surface-bright": "#f4faff",
+                        "secondary-container": "#cfe6f2",
+                        "error-container": "#ff8b9a",
+                        "surface-container-highest": "#c1e8fd",
+                        "background": "#f4faff",
+                        "secondary": "#4d626c",
+                        "error": "#9e3f4e",
+                        "on-error-container": "#782232",
+                        "on-tertiary-fixed": "#000000",
+                        "primary-fixed-dim": "#c5d4ff",
+                        "primary-dim": "#1a4ea8",
+                        "on-error": "#fff7f7",
+                        "inverse-on-surface": "#929fa6",
+                        "outline-variant": "#91b8cb",
+                        "primary-fixed": "#d9e2ff",
+                        "on-tertiary": "#fff7f5",
+                        "surface": "#f4faff",
+                        "on-primary-fixed": "#003b8d",
+                        "secondary-fixed": "#cfe6f2",
+                        "outline": "#5a8092",
+                        "tertiary-container": "#fc6018",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary-fixed": "#2d424c",
+                        "on-primary": "#f7f7ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Public Sans"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; background-color: #f4faff; color: #0a3747; }
+        .label-font { font-family: 'Public Sans', sans-serif; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background pb-20">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-slate-50 dark:bg-slate-900 border-b-0 shadow-none flex justify-between items-center px-4 py-3">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-blue-700 dark:text-blue-400">gavel</span>
+<h1 class="font-sans text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100">Compliance Auditor</h1>
+</div>
+</header>
+<!-- Main Content -->
+<main class="pt-16 px-4 space-y-6 max-w-lg mx-auto">
+<!-- Header Section -->
+<section class="space-y-2 mt-4">
+<div class="flex justify-between items-center">
+<h2 class="text-2xl font-headline font-bold text-on-surface">Reviewer Workstation</h2>
+</div>
+<div class="inline-flex items-center bg-tertiary-container/20 text-tertiary px-2 py-1 rounded label-font text-xs uppercase tracking-wider font-semibold">
+                Pending Review
+            </div>
+</section>
+<!-- Section 1: Label Image -->
+<section class="bg-surface-container-low p-4 rounded-lg space-y-3">
+<h3 class="text-sm font-headline font-semibold text-on-surface-variant">Label Image</h3>
+<div class="bg-surface-container-lowest border-2 border-dashed border-outline-variant/50 rounded flex flex-col items-center justify-center py-10">
+<span class="material-symbols-outlined text-on-surface-variant text-4xl mb-2">add_photo_alternate</span>
+<p class="text-sm text-on-surface-variant text-center px-4">Tap to upload or take a photo of the label</p>
+</div>
+</section>
+<!-- Section 2: Expected Values -->
+<section class="bg-surface-container-low p-4 rounded-lg space-y-4">
+<h3 class="text-sm font-headline font-semibold text-on-surface-variant">Expected Values</h3>
+<form class="space-y-3">
+<div>
+<label class="block label-font text-xs uppercase tracking-wider font-semibold text-on-surface-variant mb-1">Brand Name</label>
+<input class="w-full bg-surface-container-lowest border-0 rounded p-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/40 outline-none" type="text" value="Acme Spirits"/>
+</div>
+<div class="grid grid-cols-2 gap-3">
+<div>
+<label class="block label-font text-xs uppercase tracking-wider font-semibold text-on-surface-variant mb-1">Class/Type</label>
+<input class="w-full bg-surface-container-lowest border-0 rounded p-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/40 outline-none" type="text" value="Vodka"/>
+</div>
+<div>
+<label class="block label-font text-xs uppercase tracking-wider font-semibold text-on-surface-variant mb-1">Alcohol Content</label>
+<input class="w-full bg-surface-container-lowest border-0 rounded p-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/40 outline-none" type="text" value="40% ALC/VOL"/>
+</div>
+</div>
+<div>
+<label class="block label-font text-xs uppercase tracking-wider font-semibold text-on-surface-variant mb-1">Net Contents</label>
+<input class="w-full bg-surface-container-lowest border-0 rounded p-2 text-sm text-on-surface focus:ring-2 focus:ring-primary/40 outline-none" type="text" value="750ml"/>
+</div>
+</form>
+</section>
+<!-- Section 3: Verification Results -->
+<section class="bg-surface-container-low p-4 rounded-lg space-y-4">
+<h3 class="text-sm font-headline font-semibold text-on-surface-variant">Verification Results</h3>
+<div class="space-y-3">
+<!-- Match -->
+<div class="bg-surface-container-lowest p-3 rounded group hover:bg-surface-container-low transition-colors duration-150">
+<div class="flex justify-between items-start mb-2">
+<span class="label-font text-xs uppercase tracking-wider font-semibold text-on-surface-variant">Brand Name</span>
+<span class="text-[#1e7d32] label-font text-[10px] uppercase font-bold tracking-wider">Match</span>
+</div>
+<div class="grid grid-cols-2 gap-2 text-sm">
+<div>
+<span class="text-xs text-on-surface-variant block">Expected</span>
+<span class="text-on-surface">Acme Spirits</span>
+</div>
+<div>
+<span class="text-xs text-on-surface-variant block">Extracted</span>
+<span class="text-on-surface">Acme Spirits</span>
+</div>
+</div>
+</div>
+<!-- Needs Review -->
+<div class="bg-surface-container-lowest p-3 rounded group hover:bg-surface-container-low transition-colors duration-150 border-l-2 border-tertiary-container">
+<div class="flex justify-between items-start mb-2">
+<span class="label-font text-xs uppercase tracking-wider font-semibold text-on-surface-variant">Alcohol Content</span>
+<span class="text-tertiary label-font text-[10px] uppercase font-bold tracking-wider bg-tertiary-container/20 px-1 rounded">Needs Review</span>
+</div>
+<div class="grid grid-cols-2 gap-2 text-sm">
+<div>
+<span class="text-xs text-on-surface-variant block">Expected</span>
+<span class="text-on-surface">40% ALC/VOL</span>
+</div>
+<div>
+<span class="text-xs text-on-surface-variant block">Extracted</span>
+<span class="text-on-surface">40% ABV</span>
+</div>
+</div>
+</div>
+<!-- Mismatch -->
+<div class="bg-surface-container-lowest p-3 rounded group hover:bg-surface-container-low transition-colors duration-150 border-l-2 border-error-container">
+<div class="flex justify-between items-start mb-2">
+<span class="label-font text-xs uppercase tracking-wider font-semibold text-on-surface-variant">Net Contents</span>
+<span class="text-error label-font text-[10px] uppercase font-bold tracking-wider bg-error-container px-1 rounded">Mismatch</span>
+</div>
+<div class="grid grid-cols-2 gap-2 text-sm">
+<div>
+<span class="text-xs text-on-surface-variant block">Expected</span>
+<span class="text-on-surface">750ml</span>
+</div>
+<div>
+<span class="text-xs text-on-surface-variant block">Extracted</span>
+<span class="text-error font-medium">750 ml</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Primary Action -->
+<div class="pt-4 pb-8">
+<button class="w-full bg-gradient-to-br from-primary to-primary-dim text-on-primary font-bold py-3 px-4 rounded text-center transition-transform duration-100 active:scale-95 shadow-[0_12px_40px_rgba(10,55,71,0.08)]">
+                Run Verification
+            </button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50 shadow-[0_-4px_20px_rgba(10,55,71,0.05)] md:hidden">
+<div class="flex justify-around items-center h-16 px-2">
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-3 py-1 hover:text-blue-600 dark:hover:text-blue-300 active:scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined mb-1">cloud_upload</span>
+<span class="font-sans text-[10px] uppercase tracking-wider font-semibold">Upload</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg px-3 py-1 active:scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined mb-1">fact_check</span>
+<span class="font-sans text-[10px] uppercase tracking-wider font-semibold">Review</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-3 py-1 hover:text-blue-600 dark:hover:text-blue-300 active:scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined mb-1">history</span>
+<span class="font-sans text-[10px] uppercase tracking-wider font-semibold">History</span>
+</a>
+<a class="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 px-3 py-1 hover:text-blue-600 dark:hover:text-blue-300 active:scale-95 transition-transform duration-100" href="#">
+<span class="material-symbols-outlined mb-1">settings</span>
+<span class="font-sans text-[10px] uppercase tracking-wider font-semibold">Settings</span>
+</a>
+</div>
+</nav>
+</body></html>

@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Compliance Auditor - Upload</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&amp;family=Public+Sans:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#c1d8e4",
+                        "outline": "#5a8092",
+                        "on-surface-variant": "#3e6475",
+                        "inverse-on-surface": "#929fa6",
+                        "surface-container-highest": "#c1e8fd",
+                        "on-primary-fixed-variant": "#2858b2",
+                        "error-container": "#ff8b9a",
+                        "tertiary-container": "#fc6018",
+                        "surface": "#f4faff",
+                        "tertiary-dim": "#953200",
+                        "primary-fixed-dim": "#c5d4ff",
+                        "secondary-dim": "#415660",
+                        "on-error-container": "#782232",
+                        "tertiary-fixed-dim": "#ea5405",
+                        "on-tertiary": "#fff7f5",
+                        "inverse-surface": "#041015",
+                        "primary-container": "#d9e2ff",
+                        "on-surface": "#0a3747",
+                        "surface-container-high": "#cdedfe",
+                        "on-tertiary-fixed-variant": "#3d1000",
+                        "outline-variant": "#91b8cb",
+                        "on-primary": "#f7f7ff",
+                        "secondary-fixed": "#cfe6f2",
+                        "tertiary": "#a93900",
+                        "primary-fixed": "#d9e2ff",
+                        "tertiary-fixed": "#fc6018",
+                        "surface-container-low": "#e7f6ff",
+                        "on-secondary-container": "#40555f",
+                        "secondary": "#4d626c",
+                        "on-background": "#0a3747",
+                        "on-error": "#fff7f7",
+                        "on-secondary": "#f2faff",
+                        "surface-tint": "#2b5bb5",
+                        "inverse-primary": "#759efd",
+                        "surface-dim": "#b2e1f8",
+                        "on-primary-fixed": "#003b8d",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#2b5bb5",
+                        "background": "#f4faff",
+                        "on-tertiary-fixed": "#000000",
+                        "error": "#9e3f4e",
+                        "on-tertiary-container": "#2a0800",
+                        "primary-dim": "#1a4ea8",
+                        "on-secondary-fixed-variant": "#495f69",
+                        "on-secondary-fixed": "#2d424c",
+                        "surface-variant": "#c1e8fd",
+                        "error-dim": "#4f0116",
+                        "surface-bright": "#f4faff",
+                        "surface-container": "#d9f2ff",
+                        "on-primary-container": "#194da7",
+                        "secondary-container": "#cfe6f2"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {},
+                    "fontFamily": {
+                        "headline": ["Inter", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "label": ["Public Sans", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface antialiased flex h-screen overflow-hidden">
+<!-- NavigationDrawer (Shared Component Blueprint) -->
+<nav class="h-screen w-64 fixed left-0 top-0 bg-surface-container-low flex flex-col gap-2 p-4 pt-6 z-50">
+<div class="px-4 mb-6">
+<h2 class="font-headline font-semibold text-sm text-on-surface-variant uppercase tracking-widest">Workstation</h2>
+</div>
+<ul class="flex flex-col gap-1 w-full">
+<!-- Active Tab -->
+<li>
+<a class="flex items-center gap-3 px-4 py-3 bg-surface-container-highest text-primary-dim rounded-r-lg font-label text-sm font-medium transition-transform scale-100 active:scale-[0.98]" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">cloud_upload</span>
+                    Upload
+                </a>
+</li>
+<!-- Inactive Tabs -->
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 rounded-r-lg font-label text-sm font-medium transition-transform scale-100 active:scale-[0.98] transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">fact_check</span>
+                    Review
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 rounded-r-lg font-label text-sm font-medium transition-transform scale-100 active:scale-[0.98] transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">history</span>
+                    History
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high/50 rounded-r-lg font-label text-sm font-medium transition-transform scale-100 active:scale-[0.98] transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">settings</span>
+                    Settings
+                </a>
+</li>
+</ul>
+</nav>
+<!-- Main Workspace Area -->
+<div class="flex-1 flex flex-col ml-64 overflow-hidden h-full">
+<!-- TopAppBar (Shared Component Blueprint) -->
+<header class="flex justify-between items-center w-full px-6 py-4 sticky top-0 z-40 bg-surface text-on-surface">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: 'FILL' 1;">security</span>
+<span class="text-lg font-black text-on-surface tracking-tighter font-headline">Audit Precision</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-8 h-8 rounded bg-surface-container-highest flex items-center justify-center text-primary-dim font-label font-bold text-sm">
+                    AP
+                </div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto p-8 flex flex-col gap-8">
+<header class="mb-2">
+<h1 class="font-headline text-3xl font-bold text-on-surface tracking-tight">Upload Batch Data</h1>
+<p class="font-body text-sm text-on-surface-variant mt-2 max-w-2xl">Securely upload compliance label imagery for automated processing and workstation review. Formats accepted: high-resolution JPG, PNG, TIFF.</p>
+</header>
+<!-- Asymmetric Bento Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[500px]">
+<!-- Primary Drop Zone (Monolith Container) -->
+<div class="lg:col-span-8 bg-surface-container-lowest rounded-lg outline outline-1 outline-outline-variant/15 flex flex-col relative overflow-hidden">
+<div class="flex-1 m-6 bg-surface-container-low rounded flex flex-col items-center justify-center p-12 transition-colors duration-150 hover:bg-surface-container-high cursor-pointer group">
+<div class="w-20 h-20 rounded-full bg-surface flex items-center justify-center mb-6 outline outline-1 outline-outline-variant/20 group-hover:scale-105 transition-transform duration-150">
+<span class="material-symbols-outlined text-4xl text-primary">cloud_upload</span>
+</div>
+<h3 class="font-headline text-xl font-semibold text-on-surface mb-2">Drag and drop files here</h3>
+<p class="font-body text-sm text-on-surface-variant mb-8 text-center max-w-md">Ensure labels are evenly lit and free of occlusions for optimal OCR accuracy.</p>
+<!-- Secondary Button -->
+<button class="bg-surface-container-highest text-on-primary-container px-6 py-2.5 rounded font-label text-sm uppercase tracking-wider font-semibold hover:bg-secondary-fixed-dim transition-colors duration-150">
+                            Browse Local Storage
+                        </button>
+</div>
+</div>
+<!-- Pending Uploads Queue -->
+<div class="lg:col-span-4 bg-surface-container-lowest rounded-lg outline outline-1 outline-outline-variant/15 flex flex-col">
+<div class="px-5 py-4 border-b border-outline-variant/10 flex justify-between items-center">
+<h3 class="font-label text-xs uppercase tracking-widest text-on-surface-variant font-bold">Pending Queue</h3>
+<span class="bg-surface-container-high text-on-surface text-xs px-2 py-0.5 rounded font-label font-medium">3 Files</span>
+</div>
+<div class="flex-1 overflow-y-auto p-3 flex flex-col gap-1">
+<!-- Queue Item 1 -->
+<div class="flex items-center gap-3 p-3 hover:bg-surface-container-low transition-colors duration-150 rounded cursor-default group">
+<div class="w-10 h-10 rounded bg-surface flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-outline text-xl">image</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body text-sm text-on-surface font-medium truncate">EU_Compliance_Tag_v2.tiff</p>
+<p class="font-label text-xs text-on-surface-variant">4.2 MB</p>
+</div>
+<span class="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">close</span>
+</div>
+<!-- Queue Item 2 -->
+<div class="flex items-center gap-3 p-3 hover:bg-surface-container-low transition-colors duration-150 rounded cursor-default group">
+<div class="w-10 h-10 rounded bg-surface flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-outline text-xl">image</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body text-sm text-on-surface font-medium truncate">US_Safety_Label_Batch_04.jpg</p>
+<p class="font-label text-xs text-on-surface-variant">1.8 MB</p>
+</div>
+<span class="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">close</span>
+</div>
+<!-- Queue Item 3 -->
+<div class="flex items-center gap-3 p-3 hover:bg-surface-container-low transition-colors duration-150 rounded cursor-default group">
+<div class="w-10 h-10 rounded bg-surface flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-outline text-xl">description</span>
+</div>
+<div class="flex-1 min-w-0">
+<p class="font-body text-sm text-on-surface font-medium truncate">Manifest_Summary_Q3.pdf</p>
+<p class="font-label text-xs text-on-surface-variant">502 KB</p>
+</div>
+<span class="material-symbols-outlined text-primary opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">close</span>
+</div>
+</div>
+<!-- Action Footer -->
+<div class="p-4 border-t border-outline-variant/10 bg-surface/50 rounded-b-lg">
+<!-- Primary Button (Gradient Texture) -->
+<button class="w-full bg-gradient-to-br from-primary to-primary-dim text-on-primary px-4 py-3 rounded font-label text-sm uppercase tracking-wider font-bold shadow-[0_12px_40px_rgba(10,55,71,0.08)] hover:opacity-90 active:scale-[0.98] transition-all flex justify-center items-center gap-2">
+                            Initialize Processing
+                            <span class="material-symbols-outlined text-lg">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Contextual Information Bar -->
+<div class="mt-auto pt-6 flex justify-between items-center text-xs font-label text-on-surface-variant uppercase tracking-wider">
+<span>Secure Audit Environment V2.4.1</span>
+<span>End-to-End Encryption Active</span>
+</div>
+</main>
+</div>
+</body></html>

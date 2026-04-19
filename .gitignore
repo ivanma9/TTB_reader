@@ -10,3 +10,6 @@ venv/
 *.docx
 data/ttb_demo/
 ttb_eval/
+.DS_Store
+.claude/
+.playwright-mcp/

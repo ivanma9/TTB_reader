@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Audit History - Compliance Auditor</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&amp;family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "secondary-fixed-dim": "#c1d8e4",
+                        "outline": "#5a8092",
+                        "on-surface-variant": "#3e6475",
+                        "inverse-on-surface": "#929fa6",
+                        "surface-container-highest": "#c1e8fd",
+                        "on-primary-fixed-variant": "#2858b2",
+                        "error-container": "#ff8b9a",
+                        "tertiary-container": "#fc6018",
+                        "surface": "#f4faff",
+                        "tertiary-dim": "#953200",
+                        "primary-fixed-dim": "#c5d4ff",
+                        "secondary-dim": "#415660",
+                        "on-error-container": "#782232",
+                        "tertiary-fixed-dim": "#ea5405",
+                        "on-tertiary": "#fff7f5",
+                        "inverse-surface": "#041015",
+                        "primary-container": "#d9e2ff",
+                        "on-surface": "#0a3747",
+                        "surface-container-high": "#cdedfe",
+                        "on-tertiary-fixed-variant": "#3d1000",
+                        "outline-variant": "#91b8cb",
+                        "on-primary": "#f7f7ff",
+                        "secondary-fixed": "#cfe6f2",
+                        "tertiary": "#a93900",
+                        "primary-fixed": "#d9e2ff",
+                        "tertiary-fixed": "#fc6018",
+                        "surface-container-low": "#e7f6ff",
+                        "on-secondary-container": "#40555f",
+                        "secondary": "#4d626c",
+                        "on-background": "#0a3747",
+                        "on-error": "#fff7f7",
+                        "on-secondary": "#f2faff",
+                        "surface-tint": "#2b5bb5",
+                        "inverse-primary": "#759efd",
+                        "surface-dim": "#b2e1f8",
+                        "on-primary-fixed": "#003b8d",
+                        "surface-container-lowest": "#ffffff",
+                        "primary": "#2b5bb5",
+                        "background": "#f4faff",
+                        "on-tertiary-fixed": "#000000",
+                        "error": "#9e3f4e",
+                        "on-tertiary-container": "#2a0800",
+                        "primary-dim": "#1a4ea8",
+                        "on-secondary-fixed-variant": "#495f69",
+                        "on-secondary-fixed": "#2d424c",
+                        "surface-variant": "#c1e8fd",
+                        "error-dim": "#4f0116",
+                        "surface-bright": "#f4faff",
+                        "surface-container": "#d9f2ff",
+                        "on-primary-container": "#194da7",
+                        "secondary-container": "#cfe6f2"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Public Sans"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface font-body text-on-surface antialiased flex h-screen overflow-hidden">
+<!-- NavigationDrawer -->
+<nav class="bg-[#e7f6ff] dark:bg-[#0d2a35] text-[#2b5bb5] dark:text-[#6fa1ff] font-public-sans text-sm font-medium h-screen w-64 fixed left-0 top-0 no-border tonal-layering shadow-none flex flex-col gap-2 p-4 border-r-0 z-30">
+<div class="mb-8 px-4">
+<h2 class="text-xl font-bold tracking-tight text-on-surface">Workstation</h2>
+</div>
+<ul class="flex flex-col gap-1 w-full flex-grow">
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-[#3e6475] dark:text-[#91b8cb] hover:text-[#0a3747] hover:bg-[#cdedfe]/50 dark:hover:bg-[#1a3b47] scale-100 active:scale-[0.98] transition-transform transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">cloud_upload</span>
+                    Upload
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-[#3e6475] dark:text-[#91b8cb] hover:text-[#0a3747] hover:bg-[#cdedfe]/50 dark:hover:bg-[#1a3b47] scale-100 active:scale-[0.98] transition-transform transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">fact_check</span>
+                    Review
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 bg-[#c1e8fd] dark:bg-[#1e4a5a] text-[#1a4ea8] dark:text-[#ffffff] rounded-r-lg scale-100 active:scale-[0.98] transition-transform transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">history</span>
+                    History
+                </a>
+</li>
+<li>
+<a class="flex items-center gap-3 px-4 py-3 rounded text-[#3e6475] dark:text-[#91b8cb] hover:text-[#0a3747] hover:bg-[#cdedfe]/50 dark:hover:bg-[#1a3b47] scale-100 active:scale-[0.98] transition-transform transition-colors duration-150" href="#">
+<span class="material-symbols-outlined">settings</span>
+                    Settings
+                </a>
+</li>
+</ul>
+</nav>
+<!-- Main Content Area -->
+<div class="flex-1 ml-64 flex flex-col h-screen overflow-hidden">
+<!-- TopAppBar -->
+<header class="bg-[#f4faff] dark:bg-[#0a1a21] text-[#2b5bb5] dark:text-[#6fa1ff] font-inter text-[#0a3747] dark:text-[#f4faff] docked full-width top-0 bg-[#e7f6ff] dark:bg-[#0d2a35] no-border tonal-shift shadow-none flex justify-between items-center w-full px-6 py-4 sticky top-0 z-40">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-2xl text-primary">security</span>
+<h1 class="text-lg font-black text-[#0a3747] dark:text-[#f4faff] tracking-tighter">Audit Precision</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2">
+<div class="w-8 h-8 rounded-full bg-primary-container flex items-center justify-center text-primary font-bold text-sm">
+                        AP
+                    </div>
+</div>
+</div>
+</header>
+<!-- Main Viewport -->
+<main class="flex-1 overflow-y-auto p-8 bg-surface-container-low">
+<div class="max-w-7xl mx-auto space-y-6">
+<!-- Page Header & Actions -->
+<div class="flex justify-between items-end mb-8">
+<div>
+<h2 class="text-3xl font-bold font-headline text-on-surface tracking-tight mb-2">Audit History</h2>
+<p class="text-on-surface-variant font-body text-sm">Review past compliance records and status reports.</p>
+</div>
+<div class="flex gap-3">
+<button class="bg-surface-container-lowest text-on-surface px-4 py-2 rounded flex items-center gap-2 font-label text-sm uppercase tracking-widest hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[20px]">download</span>
+                            Export CSV
+                        </button>
+</div>
+</div>
+<!-- Filters & Search Toolbar -->
+<div class="bg-surface-container-lowest p-4 rounded flex flex-wrap gap-4 items-center">
+<div class="flex-1 min-w-[250px] relative">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-surface text-sm font-body border-none rounded focus:ring-2 focus:ring-primary/40 outline-none placeholder-on-surface-variant text-on-surface" placeholder="Search by Brand Name or ID..." type="text"/>
+</div>
+<div class="flex gap-3">
+<select class="bg-surface border-none text-sm font-body text-on-surface py-2 pl-4 pr-8 rounded focus:ring-2 focus:ring-primary/40 outline-none appearance-none">
+<option>All Statuses</option>
+<option>Pass</option>
+<option>Needs Review</option>
+<option>Fail</option>
+</select>
+<select class="bg-surface border-none text-sm font-body text-on-surface py-2 pl-4 pr-8 rounded focus:ring-2 focus:ring-primary/40 outline-none appearance-none">
+<option>Last 30 Days</option>
+<option>Last 90 Days</option>
+<option>This Year</option>
+<option>All Time</option>
+</select>
+<button class="bg-surface-container-highest text-on-primary-container px-4 py-2 rounded flex items-center gap-2 font-label text-sm uppercase tracking-widest hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[20px]">filter_list</span>
+                            More Filters
+                        </button>
+</div>
+</div>
+<!-- Data Table Container -->
+<div class="bg-surface-container-lowest rounded overflow-hidden">
+<table class="w-full text-left border-collapse">
+<thead class="bg-surface-container-low border-b-[1px] border-outline-variant/15">
+<tr>
+<th class="py-4 px-6 font-label text-xs uppercase tracking-[0.05em] text-on-surface-variant">Audit ID</th>
+<th class="py-4 px-6 font-label text-xs uppercase tracking-[0.05em] text-on-surface-variant">Brand Name</th>
+<th class="py-4 px-6 font-label text-xs uppercase tracking-[0.05em] text-on-surface-variant">Date Completed</th>
+<th class="py-4 px-6 font-label text-xs uppercase tracking-[0.05em] text-on-surface-variant">Score</th>
+<th class="py-4 px-6 font-label text-xs uppercase tracking-[0.05em] text-on-surface-variant">Overall Status</th>
+<th class="py-4 px-6 font-label text-xs uppercase tracking-[0.05em] text-on-surface-variant text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="font-body text-sm divide-none">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-low transition-colors group cursor-pointer border-b-[1px] border-outline-variant/15 last:border-none">
+<td class="py-4 px-6 text-on-surface font-medium">#AUD-2023-081</td>
+<td class="py-4 px-6 text-on-surface">Acme Corp Global</td>
+<td class="py-4 px-6 text-on-surface-variant">Oct 24, 2023</td>
+<td class="py-4 px-6 text-on-surface font-semibold">98/100</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container-lowest text-[#1e7d32] font-label text-xs uppercase tracking-widest border border-[#1e7d32]/20">
+<span class="w-1.5 h-1.5 rounded-full bg-[#1e7d32]"></span>
+                                        Pass
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="text-primary hover:text-primary-dim p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-low transition-colors group cursor-pointer border-b-[1px] border-outline-variant/15 last:border-none">
+<td class="py-4 px-6 text-on-surface font-medium">#AUD-2023-080</td>
+<td class="py-4 px-6 text-on-surface">Stark Industries</td>
+<td class="py-4 px-6 text-on-surface-variant">Oct 22, 2023</td>
+<td class="py-4 px-6 text-on-surface font-semibold">72/100</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-tertiary-container/20 text-tertiary font-label text-xs uppercase tracking-widest">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary"></span>
+                                        Needs Review
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="text-primary hover:text-primary-dim p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-low transition-colors group cursor-pointer border-b-[1px] border-outline-variant/15 last:border-none">
+<td class="py-4 px-6 text-on-surface font-medium">#AUD-2023-079</td>
+<td class="py-4 px-6 text-on-surface">Wayne Enterprises</td>
+<td class="py-4 px-6 text-on-surface-variant">Oct 18, 2023</td>
+<td class="py-4 px-6 text-on-surface font-semibold">95/100</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container-lowest text-[#1e7d32] font-label text-xs uppercase tracking-widest border border-[#1e7d32]/20">
+<span class="w-1.5 h-1.5 rounded-full bg-[#1e7d32]"></span>
+                                        Pass
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="text-primary hover:text-primary-dim p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-low transition-colors group cursor-pointer border-b-[1px] border-outline-variant/15 last:border-none">
+<td class="py-4 px-6 text-on-surface font-medium">#AUD-2023-078</td>
+<td class="py-4 px-6 text-on-surface">Oscorp</td>
+<td class="py-4 px-6 text-on-surface-variant">Oct 15, 2023</td>
+<td class="py-4 px-6 text-on-surface font-semibold">45/100</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-error-container text-error font-label text-xs uppercase tracking-widest">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+                                        Fail
+                                    </span>
+</td>
+<td class="py-4 px-6 text-right">
+<button class="text-primary hover:text-primary-dim p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[20px]">visibility</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+<!-- Pagination -->
+<div class="px-6 py-4 flex items-center justify-between border-t-[1px] border-outline-variant/15 bg-surface-container-lowest">
+<span class="text-sm font-label text-on-surface-variant">Showing 1 to 4 of 128 results</span>
+<div class="flex gap-2">
+<button class="p-1 rounded text-on-surface-variant hover:bg-surface-container-low disabled:opacity-50" disabled="">
+<span class="material-symbols-outlined text-[20px]">chevron_left</span>
+</button>
+<button class="p-1 rounded text-on-surface-variant hover:bg-surface-container-low">
+<span class="material-symbols-outlined text-[20px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
