@@ -8,6 +8,8 @@ from app.queue_state import (
     ReviewerAction,
     get_item,
     list_items,
+    mark_complete,
+    mark_in_review,
     reset_queue,
     seed_queue,
 )
@@ -47,3 +49,21 @@ class TestSeeding:
 
     def test_get_item_unknown_returns_none(self):
         assert get_item("nope") is None
+
+
+class TestTransitions:
+    def test_mark_in_review_sets_verdict(self):
+        item = mark_in_review("gs_001", {"overall_verdict": "match"})
+        assert item.status == QueueStatus.IN_REVIEW
+        assert item.verdict == {"overall_verdict": "match"}
+
+    def test_mark_complete_sets_action_and_timestamp(self):
+        mark_in_review("gs_001", {"overall_verdict": "match"})
+        item = mark_complete("gs_001", ReviewerAction.APPROVED)
+        assert item.status == QueueStatus.COMPLETE
+        assert item.reviewer_action == ReviewerAction.APPROVED
+        assert item.completed_at is not None
+
+    def test_unknown_id_returns_none(self):
+        assert mark_in_review("nope", {}) is None
+        assert mark_complete("nope", ReviewerAction.APPROVED) is None
