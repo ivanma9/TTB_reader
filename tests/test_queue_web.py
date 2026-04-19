@@ -68,3 +68,23 @@ class TestQueueItemDetail:
     def test_unknown_id_404(self, client):
         r = client.get("/queue/nope")
         assert r.status_code == 404
+
+
+class TestQueueItemVerify:
+    def test_verify_runs_and_transitions_to_in_review(self, client):
+        stub = {
+            "overall_verdict": "match",
+            "recommended_action": "accept",
+            "field_results": {},
+            "processing_ms": 123,
+        }
+        with patch("app.main.verify_label", return_value=stub):
+            r = client.post("/queue/gs_001/verify")
+        assert r.status_code == 200
+        assert "Verification result" in r.text
+        assert 'value="approved"' in r.text
+        assert 'value="rejected"' in r.text
+
+    def test_verify_unknown_id_404(self, client):
+        r = client.post("/queue/nope/verify")
+        assert r.status_code == 404
