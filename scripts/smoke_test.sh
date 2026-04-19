@@ -70,19 +70,38 @@ HEALTH_BODY="$(curl -sSf "${BASE_URL}/healthz")" \
 echo "$HEALTH_BODY" | grep -q '"status"' \
   || fail "/healthz body missing status field: ${HEALTH_BODY}"
 
-# 2. Seeded sample submission through the demo path
-echo "[smoke] POST ${BASE_URL}/demo/gs_001 ..."
-DEMO_STATUS="$(curl -s -o /tmp/smoke-demo-body.html -w '%{http_code}' -X POST "${BASE_URL}/demo/gs_001")"
-[[ "$DEMO_STATUS" == "200" ]] \
-  || fail "POST /demo/gs_001 returned HTTP ${DEMO_STATUS}"
-grep -q "Verification Results" /tmp/smoke-demo-body.html \
-  || fail "POST /demo/gs_001 did not render a verdict"
-rm -f /tmp/smoke-demo-body.html
+# 2. Queue flow: landing → item detail → verify → action
+echo "[smoke] GET ${BASE_URL}/ (queue landing) ..."
+curl -fsS "${BASE_URL}/" | grep -q "Review Queue" \
+  || fail "queue landing did not render"
+
+echo "[smoke] GET ${BASE_URL}/queue/gs_001 ..."
+curl -fsS "${BASE_URL}/queue/gs_001" | grep -q "COLA-2026-0412-001" \
+  || fail "queue item detail did not render"
+
+echo "[smoke] POST ${BASE_URL}/queue/gs_001/verify ..."
+VERIFY_BODY="$(mktemp -t smoke-verify.XXXXXX.html)"
+VERIFY_STATUS="$(curl -s -o "$VERIFY_BODY" -w '%{http_code}' -X POST "${BASE_URL}/queue/gs_001/verify")"
+[[ "$VERIFY_STATUS" == "200" ]] \
+  || { rm -f "$VERIFY_BODY"; fail "POST /queue/gs_001/verify returned HTTP ${VERIFY_STATUS}"; }
+grep -q "Verification Results" "$VERIFY_BODY" \
+  || { rm -f "$VERIFY_BODY"; fail "POST /queue/gs_001/verify did not render a verdict"; }
+rm -f "$VERIFY_BODY"
+
+echo "[smoke] POST ${BASE_URL}/queue/gs_001/action ..."
+ACTION_STATUS="$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+  -d "action=approved" "${BASE_URL}/queue/gs_001/action")"
+[[ "$ACTION_STATUS" == "303" ]] \
+  || fail "POST /queue/gs_001/action returned HTTP ${ACTION_STATUS} (expected 303)"
+
+echo "[smoke] GET ${BASE_URL}/test ..."
+curl -fsS "${BASE_URL}/test" | grep -q "Test a label" \
+  || fail "/test did not render"
 
 # 3. Golden-set eval against the real verifier (runs in-process, no server needed).
-#    Only in local mode — when SMOKE_BASE_URL is set, POST /demo/gs_001 already
-#    exercised the deployed verifier, and the local Python env may not have
-#    paddleocr installed.
+#    Only in local mode — when SMOKE_BASE_URL is set, POST /queue/gs_001/verify
+#    already exercised the deployed verifier, and the local Python env may not
+#    have paddleocr installed.
 if $LOCAL_MODE; then
   echo "[smoke] running golden-set eval ..."
   ALC_EVAL_TARGET="${ALC_EVAL_TARGET:-alc_label_verifier.adapter:target}" \
