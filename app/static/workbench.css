@@ -764,37 +764,68 @@ main {
 .queue-hint {
   color: var(--on-surface-variant);
   margin: 0.5rem 0 1.5rem;
+  max-width: 62ch;
 }
 .queue-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 .queue-table th {
   text-align: left;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   color: var(--on-surface-variant);
   border-bottom: 1px solid var(--outline-variant);
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1rem;
+  font-weight: 600;
 }
 .queue-table td {
-  padding: 1rem;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--outline-variant);
   vertical-align: middle;
 }
+.queue-table tbody tr:last-child td { border-bottom: 0; }
+
+.queue-row { transition: background 0.12s; }
+.queue-row:hover { background: var(--surface-container-lowest); }
+
+/* Column sizing — keeps data on a single line */
+.queue-table th:nth-child(1), .queue-table td:nth-child(1) { width: 14rem; }
+.queue-table th:nth-child(2), .queue-table td:nth-child(2) {
+  width: auto;
+  max-width: 0;                /* required for ellipsis inside a fixed table */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.queue-table th:nth-child(3), .queue-table td:nth-child(3) {
+  width: 10rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  color: var(--on-surface-variant);
+}
+.queue-table th:nth-child(4), .queue-table td:nth-child(4) { width: 7rem; }
+.queue-table th:nth-child(5), .queue-table td:nth-child(5) { width: 14.5rem; }
+.queue-table th:nth-child(6), .queue-table td:nth-child(6) { width: 5.5rem; text-align: right; }
+
 .queue-app-id {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-weight: 600;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
 }
 
 /* ── Status badges ───────────────────────────────────── */
 .status-badge {
   display: inline-block;
-  padding: 0.25rem 0.6rem;
+  padding: 0.25rem 0.65rem;
   border-radius: 999px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
+  white-space: nowrap;
+  line-height: 1.4;
 }
 .status-badge--pending       { background: #eef2f7; color: #51607a; }
 .status-badge--in-review     { background: #fff4d6; color: #8a6a08; }
@@ -804,10 +835,12 @@ main {
 
 .origin-badge {
   display: inline-block;
-  padding: 0.15rem 0.5rem;
+  padding: 0.2rem 0.55rem;
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 600;
+  white-space: nowrap;
+  line-height: 1.4;
 }
 .origin-badge--domestic { background: #e8eefc; color: #2546a8; }
 .origin-badge--import   { background: #f2e8fc; color: #5e2ca8; }
