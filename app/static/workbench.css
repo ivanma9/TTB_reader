@@ -761,6 +761,11 @@ main {
 }
 
 /* ── Queue table ─────────────────────────────────────── */
+
+/* Queue page uses a wider main so the table has breathing room.
+   Other pages keep the 680px column. */
+body.page--queue main { max-width: 1080px; }
+
 .queue-hint {
   color: var(--on-surface-variant);
   margin: 0.5rem 0 1.5rem;
@@ -791,24 +796,39 @@ main {
 .queue-row { transition: background 0.12s; }
 .queue-row:hover { background: var(--surface-container-lowest); }
 
-/* Column sizing — keeps data on a single line */
-.queue-table th:nth-child(1), .queue-table td:nth-child(1) { width: 14rem; }
+/* Column sizing — percentage-based so the table fluidly fills the card
+   at any viewport. The submitter column is `auto` and absorbs leftover
+   space with ellipsis truncation. */
+.queue-table th:nth-child(1), .queue-table td:nth-child(1) { width: 20%; }
 .queue-table th:nth-child(2), .queue-table td:nth-child(2) {
   width: auto;
-  max-width: 0;                /* required for ellipsis inside a fixed table */
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .queue-table th:nth-child(3), .queue-table td:nth-child(3) {
-  width: 10rem;
+  width: 15%;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   color: var(--on-surface-variant);
 }
-.queue-table th:nth-child(4), .queue-table td:nth-child(4) { width: 7rem; }
-.queue-table th:nth-child(5), .queue-table td:nth-child(5) { width: 14.5rem; }
-.queue-table th:nth-child(6), .queue-table td:nth-child(6) { width: 5.5rem; text-align: right; }
+.queue-table th:nth-child(4), .queue-table td:nth-child(4) { width: 10%; }
+.queue-table th:nth-child(5), .queue-table td:nth-child(5) { width: 20%; }
+.queue-table th:nth-child(6), .queue-table td:nth-child(6) { width: 9%; text-align: right; }
+
+/* Narrow viewports: drop the submitter column and redistribute. Keeps the
+   core data (application id, date, origin, status, action) visible. */
+@media (max-width: 720px) {
+  .queue-table th:nth-child(2),
+  .queue-table td:nth-child(2) { display: none; }
+  .queue-table th:nth-child(1), .queue-table td:nth-child(1) { width: 32%; }
+  .queue-table th:nth-child(3), .queue-table td:nth-child(3) { width: 23%; }
+  .queue-table th:nth-child(4), .queue-table td:nth-child(4) { width: 13%; }
+  .queue-table th:nth-child(5), .queue-table td:nth-child(5) { width: 22%; }
+  .queue-table th:nth-child(6), .queue-table td:nth-child(6) { width: 10%; }
+  .queue-table th { padding: 0.5rem 0.5rem; }
+  .queue-table td { padding: 0.65rem 0.5rem; }
+}
 
 .queue-app-id {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
