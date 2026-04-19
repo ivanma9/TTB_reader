@@ -119,6 +119,14 @@ class TestQueueItemAction:
         r = client.post("/queue/nope/action", data={"action": "approved"})
         assert r.status_code == 404
 
+    def test_action_rejected_when_not_in_review(self, client):
+        r = client.post(
+            "/queue/gs_020/action",
+            data={"action": "approved"},
+            follow_redirects=False,
+        )
+        assert r.status_code == 409
+
 
 class TestManualTestSurface:
     def test_get_test_renders_form(self, client):

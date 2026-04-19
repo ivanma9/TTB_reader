@@ -32,6 +32,7 @@ from app.batch_store import (
     update_row_form_values,
 )
 from app.queue_state import (
+    QueueStatus,
     ReviewerAction,
     get_item,
     list_items,
@@ -134,8 +135,14 @@ async def queue_item_action(
 ):
     if action not in _VALID_REVIEWER_ACTIONS:
         return JSONResponse(status_code=422, content={"error": "Unknown action."})
-    if get_item(item_id) is None:
+    item = get_item(item_id)
+    if item is None:
         return HTMLResponse(status_code=404, content="Queue item not found.")
+    if item.status != QueueStatus.IN_REVIEW:
+        return JSONResponse(
+            status_code=409,
+            content={"error": "Queue item must be in review before an action can be recorded."},
+        )
     mark_complete(item_id, ReviewerAction(action))
     return RedirectResponse(url="/", status_code=303)
 
