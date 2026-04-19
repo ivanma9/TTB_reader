@@ -1,9 +1,7 @@
-"""Web layer tests for the FastAPI reviewer workbench."""
+"""Web layer tests for the /test manual-entry surface."""
 
 from __future__ import annotations
 
-import io
-import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -31,7 +29,6 @@ VALID_FORM = {
 
 
 def make_client() -> TestClient:
-    # Patch warm_ocr so tests don't trigger PaddleOCR init
     with patch("app.main.warm_ocr"):
         from app.main import app
         return TestClient(app, raise_server_exceptions=True)
@@ -51,36 +48,32 @@ class TestHealthz:
         assert r.json()["status"] == "ok"
 
 
-# ── GET / ─────────────────────────────────────────────────────────────────────
+# ── GET /test ────────────────────────────────────────────────────────────────
 
-class TestIndexPage:
-    def test_index_renders_workbench(self, client):
-        r = client.get("/")
+class TestTestSurfacePage:
+    def test_test_renders_workbench(self, client):
+        r = client.get("/test")
         assert r.status_code == 200
-        assert "Reviewer Workstation" in r.text
+        assert "Test a label" in r.text
 
-    def test_index_has_scope_badge(self, client):
-        r = client.get("/")
-        assert "Distilled Spirits" in r.text
-
-    def test_index_has_import_toggle(self, client):
-        r = client.get("/")
+    def test_test_has_import_toggle(self, client):
+        r = client.get("/test")
         assert "is_import" in r.text
 
-    def test_index_has_warning_prefilled(self, client):
-        r = client.get("/")
+    def test_test_has_warning_prefilled(self, client):
+        r = client.get("/test")
         assert "GOVERNMENT WARNING:" in r.text
 
-    def test_index_empty_results_state(self, client):
-        r = client.get("/")
+    def test_test_empty_results_state(self, client):
+        r = client.get("/test")
         assert "Results will appear here after verification." in r.text
 
 
-# ── POST /verify — validation errors ─────────────────────────────────────────
+# ── POST /test/verify — validation errors ────────────────────────────────────
 
 class TestFormValidation:
     def test_missing_image_returns_422(self, client):
-        r = client.post("/verify", data=VALID_FORM)
+        r = client.post("/test/verify", data=VALID_FORM)
         assert r.status_code == 422
         assert "Label image is required" in r.text
 
@@ -88,7 +81,7 @@ class TestFormValidation:
         bad = {**VALID_FORM, "brand_name": ""}
         image_bytes = b"\x89PNG\r\n\x1a\n" + b"\x00" * 50
         r = client.post(
-            "/verify",
+            "/test/verify",
             data=bad,
             files={"label_image": ("test.png", image_bytes, "image/png")},
         )
@@ -99,7 +92,7 @@ class TestFormValidation:
         form = {**VALID_FORM, "is_import": "1", "country_of_origin": ""}
         image_bytes = b"\x89PNG\r\n\x1a\n" + b"\x00" * 50
         r = client.post(
-            "/verify",
+            "/test/verify",
             data=form,
             files={"label_image": ("test.png", image_bytes, "image/png")},
         )
@@ -109,7 +102,7 @@ class TestFormValidation:
     def test_oversized_upload_returns_413(self, client):
         large = b"\x00" * (21 * 1024 * 1024)
         r = client.post(
-            "/verify",
+            "/test/verify",
             data=VALID_FORM,
             files={"label_image": ("big.png", large, "image/png")},
         )
@@ -117,11 +110,11 @@ class TestFormValidation:
 
     def test_verifier_not_called_on_validation_failure(self, client):
         with patch("app.main.verify_label") as mock_verify:
-            client.post("/verify", data=VALID_FORM)
+            client.post("/test/verify", data=VALID_FORM)
             mock_verify.assert_not_called()
 
 
-# ── POST /verify — verifier integration (mocked) ─────────────────────────────
+# ── POST /test/verify — verifier integration (mocked) ────────────────────────
 
 def _mock_match_result():
     return {
@@ -178,7 +171,7 @@ class TestVerifyEndpoint:
         data = {**VALID_FORM, **(extra_data or {})}
         img = image_bytes or (b"\x89PNG\r\n\x1a\n" + b"\x00" * 100)
         return client.post(
-            "/verify",
+            "/test/verify",
             data=data,
             files={"label_image": ("label.png", img, "image/png")},
         )
@@ -207,7 +200,6 @@ class TestVerifyEndpoint:
         assert "Needs Review" in r.text or "needs_review" in r.text.lower()
 
     def test_unreadable_image_bytes_shows_needs_review(self, client):
-        # Bad image bytes reach PIL → UnreadableImageError → service returns needs_review
         with patch("app.main.verify_label", return_value=_mock_unreadable_result()):
             r = self._post_valid(client)
         assert r.status_code == 200
@@ -218,7 +210,7 @@ class TestVerifyEndpoint:
         client2 = TestClient(_app, raise_server_exceptions=False)
         with patch("app.main.verify_label", side_effect=RuntimeError("boom")):
             r = client2.post(
-                "/verify",
+                "/test/verify",
                 data=VALID_FORM,
                 files={"label_image": ("label.png", b"\x89PNG\r\n\x1a\n" + b"\x00" * 100, "image/png")},
             )
@@ -228,36 +220,3 @@ class TestVerifyEndpoint:
         with patch("app.main.verify_label", return_value=_mock_match_result()):
             r = self._post_valid(client)
         assert "Processed in 123" in r.text or "123 ms" in r.text
-
-
-# ── Demo samples ─────────────────────────────────────────────────────────────
-
-class TestDemoSamples:
-    def test_landing_page_lists_demo_samples(self, client):
-        r = client.get("/")
-        assert r.status_code == 200
-        assert "Try a sample" in r.text
-        assert "Clean domestic match" in r.text
-        assert "Import with country of origin" in r.text
-        assert "Needs review" in r.text
-
-    def test_demo_runs_verifier_and_renders_result(self, client):
-        with patch("app.main.verify_label", return_value=_mock_match_result()) as mock_verify:
-            r = client.post("/demo/gs_001")
-        assert r.status_code == 200
-        mock_verify.assert_called_once()
-        # Form is prefilled with the demo case expected values
-        assert "OLD TOM DISTILLERY" in r.text
-        # Result panel rendered (uses _mock_match_result)
-        assert "Match" in r.text or "Accept" in r.text
-
-    def test_demo_prefills_import_fields(self, client):
-        with patch("app.main.verify_label", return_value=_mock_match_result()):
-            r = client.post("/demo/gs_003")
-        assert r.status_code == 200
-        assert "SIERRA AZUL" in r.text
-        assert "Mexico" in r.text
-
-    def test_unknown_demo_returns_404(self, client):
-        r = client.post("/demo/does_not_exist")
-        assert r.status_code == 404
