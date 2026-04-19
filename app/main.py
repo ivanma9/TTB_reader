@@ -32,7 +32,14 @@ from app.batch_store import (
     update_row_form_values,
 )
 from app.demo_cases import DEMO_CASES, get_demo_case
-from app.queue_state import get_item, list_items, mark_in_review, seed_queue
+from app.queue_state import (
+    ReviewerAction,
+    get_item,
+    list_items,
+    mark_complete,
+    mark_in_review,
+    seed_queue,
+)
 from app.web_helpers import build_application_payload, validate_expected_data
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -116,6 +123,22 @@ async def queue_item_image(item_id: str):
     if item is None:
         return HTMLResponse(status_code=404, content="Not found.")
     return FileResponse(path=str(item.image_path))
+
+
+_VALID_REVIEWER_ACTIONS = {a.value for a in ReviewerAction}
+
+
+@app.post("/queue/{item_id}/action")
+async def queue_item_action(
+    item_id: str,
+    action: Annotated[str, Form()],
+):
+    if action not in _VALID_REVIEWER_ACTIONS:
+        return JSONResponse(status_code=422, content={"error": "Unknown action."})
+    if get_item(item_id) is None:
+        return HTMLResponse(status_code=404, content="Queue item not found.")
+    mark_complete(item_id, ReviewerAction(action))
+    return RedirectResponse(url="/", status_code=303)
 
 
 @app.post("/queue/{item_id}/verify", response_class=HTMLResponse)

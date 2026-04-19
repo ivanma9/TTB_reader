@@ -88,3 +88,33 @@ class TestQueueItemVerify:
     def test_verify_unknown_id_404(self, client):
         r = client.post("/queue/nope/verify")
         assert r.status_code == 404
+
+
+class TestQueueItemAction:
+    def test_action_marks_complete_and_redirects(self, client):
+        stub = {"overall_verdict": "match", "recommended_action": "accept", "field_results": {}}
+        with patch("app.main.verify_label", return_value=stub):
+            client.post("/queue/gs_001/verify")
+
+        r = client.post("/queue/gs_001/action", data={"action": "approved"}, follow_redirects=False)
+        assert r.status_code == 303
+        assert r.headers["location"] == "/"
+
+        r = client.get("/")
+        assert "Complete · Approved" in r.text
+
+    def test_action_rejected_shows_on_queue(self, client):
+        stub = {"overall_verdict": "mismatch", "recommended_action": "manual_review", "field_results": {}}
+        with patch("app.main.verify_label", return_value=stub):
+            client.post("/queue/gs_003/verify")
+        client.post("/queue/gs_003/action", data={"action": "rejected"}, follow_redirects=False)
+        r = client.get("/")
+        assert "Complete · Rejected" in r.text
+
+    def test_action_invalid_value_rejected(self, client):
+        r = client.post("/queue/gs_001/action", data={"action": "bogus"})
+        assert r.status_code == 422
+
+    def test_action_unknown_id_404(self, client):
+        r = client.post("/queue/nope/action", data={"action": "approved"})
+        assert r.status_code == 404
