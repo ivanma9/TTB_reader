@@ -8,10 +8,12 @@ application payload into the web form_values shape used by the queue
 from __future__ import annotations
 
 import json
+import logging
 import random
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+
+log = logging.getLogger(__name__)
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _CASES_JSONL = _REPO_ROOT / "evals" / "golden_set" / "cases.jsonl"
@@ -53,29 +55,45 @@ def _application_to_form_values(app: dict) -> dict[str, str | None]:
 
 
 def _load_pool() -> dict[str, PoolCase]:
+    """Parse cases.jsonl into PoolCase records.
+
+    On any I/O or parse error logs a warning and returns an empty dict so the
+    app boots cleanly — the simulate endpoint naturally returns 409 and the
+    Phase 3 button renders as disabled. Do not let eval-only data brick prod.
+    """
+    try:
+        text = _CASES_JSONL.read_text()
+    except OSError as exc:
+        log.warning("simulation pool disabled — cases.jsonl unreadable: %s", exc)
+        return {}
+
     cases: dict[str, PoolCase] = {}
-    for line in _CASES_JSONL.read_text().splitlines():
-        if not line.strip():
-            continue
-        rec = json.loads(line)
-        inputs = rec["inputs"]
-        app = inputs["application"]
-        case_id = inputs["case_id"]
-        cases[case_id] = PoolCase(
-            case_id=case_id,
-            brand_name=app["brand_name"],
-            is_import=bool(app.get("is_import")),
-            image_path=_REPO_ROOT / inputs["label_image_path"],
-            form_values=_application_to_form_values(app),
-        )
+    try:
+        for line in text.splitlines():
+            if not line.strip():
+                continue
+            rec = json.loads(line)
+            inputs = rec["inputs"]
+            app = inputs["application"]
+            case_id = inputs["case_id"]
+            cases[case_id] = PoolCase(
+                case_id=case_id,
+                brand_name=app["brand_name"],
+                is_import=bool(app.get("is_import")),
+                image_path=_REPO_ROOT / inputs["label_image_path"],
+                form_values=_application_to_form_values(app),
+            )
+    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        log.warning("simulation pool disabled — cases.jsonl malformed: %s", exc)
+        return {}
     return cases
 
 
 POOL_CASES: dict[str, PoolCase] = _load_pool()
 
 
-def pick_unqueued_case(queued_ids: set[str]) -> Optional[PoolCase]:
-    remaining = [c for cid, c in POOL_CASES.items() if cid not in queued_ids]
+def pick_unqueued_case(queued_case_ids: set[str]) -> PoolCase | None:
+    remaining = [c for cid, c in POOL_CASES.items() if cid not in queued_case_ids]
     if not remaining:
         return None
     return random.choice(remaining)

@@ -220,8 +220,9 @@ def _generate_cola_id(now: datetime, existing: set[str]) -> str:
 
 @app.post("/queue/simulate")
 async def simulate_submission():
-    queued_ids = {item.id for item in list_items()}
-    case = pick_unqueued_case(queued_ids)
+    current_items = list_items()
+    queued_case_ids = {item.id for item in current_items}
+    case = pick_unqueued_case(queued_case_ids)
     if case is None:
         return JSONResponse(
             status_code=409,
@@ -229,10 +230,10 @@ async def simulate_submission():
         )
     # Stagger back 0–120 minutes so the queue doesn't look like a test dump.
     submitted_at = datetime.now() - timedelta(minutes=random.randint(0, 120))
-    existing_app_ids = {item.application_id for item in list_items()}
+    existing_cola_ids = {item.application_id for item in current_items}
     add_item(
         id=case.case_id,
-        application_id=_generate_cola_id(submitted_at, existing_app_ids),
+        application_id=_generate_cola_id(submitted_at, existing_cola_ids),
         submitter=derive_submitter(case),
         submitted_at=submitted_at,
         beverage_class="Distilled Spirits",

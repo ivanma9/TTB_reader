@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 
+import app.simulation_pool as simulation_pool
 from app.simulation_pool import (
     POOL_CASES,
     PoolCase,
@@ -82,3 +84,21 @@ class TestDeriveSubmitter:
         # gs_005 brand is "Stone's Throw" — title() would mangle the possessive
         case = POOL_CASES["gs_005"]
         assert derive_submitter(case) == "Stone's Throw LLC"
+
+
+class TestPoolLoadResilience:
+    def test_missing_cases_file_yields_empty_pool(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(simulation_pool, "_CASES_JSONL", tmp_path / "missing.jsonl")
+        assert simulation_pool._load_pool() == {}
+
+    def test_malformed_jsonl_yields_empty_pool(self, monkeypatch, tmp_path):
+        bad = tmp_path / "cases.jsonl"
+        bad.write_text("{not valid json\n")
+        monkeypatch.setattr(simulation_pool, "_CASES_JSONL", bad)
+        assert simulation_pool._load_pool() == {}
+
+    def test_missing_required_key_yields_empty_pool(self, monkeypatch, tmp_path):
+        bad = tmp_path / "cases.jsonl"
+        bad.write_text('{"inputs": {}}\n')  # missing "case_id", "application", etc.
+        monkeypatch.setattr(simulation_pool, "_CASES_JSONL", bad)
+        assert simulation_pool._load_pool() == {}
