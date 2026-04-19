@@ -1,11 +1,21 @@
 from __future__ import annotations
 
+import re
+from datetime import datetime
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 from fastapi.testclient import TestClient
 
-from app.queue_state import reset_queue, seed_queue
+from app.queue_state import (
+    add_item,
+    get_item,
+    list_items,
+    reset_queue,
+    seed_queue,
+)
+from app.simulation_pool import POOL_CASES
 
 
 @pytest.fixture(autouse=True)
@@ -126,6 +136,79 @@ class TestQueueItemAction:
             follow_redirects=False,
         )
         assert r.status_code == 409
+
+
+def _fill_queue_from_pool(exclude: set[str] | None = None) -> None:
+    """Force-populate the queue with every pool case (minus `exclude`). Test helper."""
+    exclude = exclude or set()
+    for case_id, case in POOL_CASES.items():
+        if case_id in exclude:
+            continue
+        add_item(
+            id=case_id,
+            application_id=f"COLA-2026-0419-{case_id[-3:]}",
+            submitter="Test Submitter",
+            submitted_at=datetime(2026, 4, 19, 12, 0),
+            beverage_class="Distilled Spirits",
+            origin_badge="Import" if case.is_import else "Domestic",
+            image_path=case.image_path,
+            form_values=case.form_values,
+        )
+
+
+class TestQueueSimulate:
+    def test_simulate_adds_item_and_redirects(self, client):
+        r = client.post("/queue/simulate", follow_redirects=False)
+        assert r.status_code == 303
+        assert r.headers["location"] == "/"
+        # 3 seeded + 1 new
+        assert len(list_items()) == 4
+
+    def test_simulate_new_item_visible_on_landing(self, client):
+        client.post("/queue/simulate")
+        r = client.get("/")
+        seeded = {"COLA-2026-0412-001", "COLA-2026-0413-027", "COLA-2026-0415-009"}
+        found = set(re.findall(r"COLA-\d{4}-\d{4}-\d{3}", r.text))
+        assert found - seeded, f"expected a non-seeded COLA id on landing; found={found}"
+
+    def test_simulate_when_exhausted_returns_409(self, client):
+        reset_queue()
+        _fill_queue_from_pool()
+        r = client.post("/queue/simulate")
+        assert r.status_code == 409
+
+    def test_simulate_picks_case_not_already_queued(self, client):
+        reset_queue()
+        missing = "gs_014"
+        _fill_queue_from_pool(exclude={missing})
+        r = client.post("/queue/simulate", follow_redirects=False)
+        assert r.status_code == 303
+        assert get_item(missing) is not None
+
+    def test_simulate_sets_submitter_and_origin(self, client):
+        reset_queue()
+        missing = "gs_003"  # import (Sierra Azul)
+        _fill_queue_from_pool(exclude={missing})
+        client.post("/queue/simulate", follow_redirects=False)
+        item = get_item(missing)
+        assert item is not None
+        assert item.origin_badge == "Import"
+        assert item.submitter == "Sierra Azul Imports"
+        assert item.beverage_class == "Distilled Spirits"
+        # COLA id shape
+        assert re.fullmatch(r"COLA-\d{4}-\d{4}-\d{3}", item.application_id)
+
+    def test_simulate_fills_image_path_and_form_values(self, client):
+        reset_queue()
+        missing = "gs_007"  # domestic, Stone's Throw
+        _fill_queue_from_pool(exclude={missing})
+        client.post("/queue/simulate", follow_redirects=False)
+        item = get_item(missing)
+        assert item is not None
+        assert isinstance(item.image_path, Path)
+        assert item.image_path.exists()
+        assert item.form_values["brand_name"] == "Stone's Throw"
+        assert item.submitter == "Stone's Throw LLC"
 
 
 class TestManualTestSurface:

@@ -5,9 +5,11 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import random
 import shutil
 import tempfile
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Annotated, List, Optional
 
@@ -37,6 +39,7 @@ from app.queue_state import (
     QueueLoadError,
     QueueStatus,
     ReviewerAction,
+    add_item,
     configure_persistence,
     get_item,
     list_items,
@@ -47,6 +50,7 @@ from app.queue_state import (
     save_to_disk,
     seed_queue,
 )
+from app.simulation_pool import derive_submitter, pick_unqueued_case
 from app.web_helpers import build_application_payload, validate_expected_data
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -202,6 +206,41 @@ async def queue_item_verify(request: Request, item_id: str) -> HTMLResponse:
             "standard_warning": STANDARD_WARNING,
         },
     )
+
+
+def _generate_cola_id(now: datetime, existing: set[str]) -> str:
+    prefix = f"COLA-{now.year:04d}-{now.month:02d}{now.day:02d}-"
+    for _ in range(1000):
+        suffix = f"{random.randint(1, 999):03d}"
+        candidate = prefix + suffix
+        if candidate not in existing:
+            return candidate
+    raise RuntimeError("exhausted COLA id space for today")
+
+
+@app.post("/queue/simulate")
+async def simulate_submission():
+    queued_ids = {item.id for item in list_items()}
+    case = pick_unqueued_case(queued_ids)
+    if case is None:
+        return JSONResponse(
+            status_code=409,
+            content={"error": "All pool cases are already in the queue."},
+        )
+    # Stagger back 0–120 minutes so the queue doesn't look like a test dump.
+    submitted_at = datetime.now() - timedelta(minutes=random.randint(0, 120))
+    existing_app_ids = {item.application_id for item in list_items()}
+    add_item(
+        id=case.case_id,
+        application_id=_generate_cola_id(submitted_at, existing_app_ids),
+        submitter=derive_submitter(case),
+        submitted_at=submitted_at,
+        beverage_class="Distilled Spirits",
+        origin_badge="Import" if case.is_import else "Domestic",
+        image_path=case.image_path,
+        form_values=case.form_values,
+    )
+    return RedirectResponse(url="/", status_code=303)
 
 
 @app.get("/test", response_class=HTMLResponse)
