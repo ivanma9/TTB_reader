@@ -228,3 +228,36 @@ class TestVerifyEndpoint:
         with patch("app.main.verify_label", return_value=_mock_match_result()):
             r = self._post_valid(client)
         assert "Processed in 123" in r.text or "123 ms" in r.text
+
+
+# ── Demo samples ─────────────────────────────────────────────────────────────
+
+class TestDemoSamples:
+    def test_landing_page_lists_demo_samples(self, client):
+        r = client.get("/")
+        assert r.status_code == 200
+        assert "Try a sample" in r.text
+        assert "Clean domestic match" in r.text
+        assert "Import with country of origin" in r.text
+        assert "Needs review" in r.text
+
+    def test_demo_runs_verifier_and_renders_result(self, client):
+        with patch("app.main.verify_label", return_value=_mock_match_result()) as mock_verify:
+            r = client.post("/demo/gs_001")
+        assert r.status_code == 200
+        mock_verify.assert_called_once()
+        # Form is prefilled with the demo case expected values
+        assert "OLD TOM DISTILLERY" in r.text
+        # Result panel rendered (uses _mock_match_result)
+        assert "Match" in r.text or "Accept" in r.text
+
+    def test_demo_prefills_import_fields(self, client):
+        with patch("app.main.verify_label", return_value=_mock_match_result()):
+            r = client.post("/demo/gs_003")
+        assert r.status_code == 200
+        assert "SIERRA AZUL" in r.text
+        assert "Mexico" in r.text
+
+    def test_unknown_demo_returns_404(self, client):
+        r = client.post("/demo/does_not_exist")
+        assert r.status_code == 404

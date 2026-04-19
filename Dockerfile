@@ -25,11 +25,17 @@ RUN pip install --no-cache-dir ".[web]" httpx
 RUN pip install --no-cache-dir "paddlepaddle>=2.6.0" && \
     pip install --no-cache-dir "paddleocr>=2.7.0,<3.0.0"
 
-# Bootstrap model weights at build time.
-# On QEMU-emulated ARM64 this step may fail (AVX2 not emulated);
-# models will be downloaded automatically on first use in that case.
+# Bootstrap model weights at build time so the image is immutable and the
+# runtime container never depends on a live download from Baidu's CDN.
+# Build on a real x86_64 host (Render, GitHub Actions, any Linux CI) so QEMU
+# does not need to emulate AVX2. If you are iterating locally on arm64 and
+# only need the app to boot, pass --build-arg ALLOW_MISSING_MODELS=true.
+ARG ALLOW_MISSING_MODELS=false
 COPY scripts/bootstrap_models.py scripts/bootstrap_models.py
-RUN python scripts/bootstrap_models.py || echo "[WARN] bootstrap skipped - models will download on first run"
+RUN python scripts/bootstrap_models.py \
+    || ( [ "$ALLOW_MISSING_MODELS" = "true" ] \
+         && echo "[WARN] bootstrap skipped — arm64/QEMU build, weights will download at first request" \
+         || ( echo "[FATAL] model bootstrap failed; refuse to ship an image that needs runtime downloads" && exit 1 ) )
 
 # Copy remaining source
 COPY . .
@@ -39,4 +45,6 @@ ENV ALC_EVAL_TARGET=alc_label_verifier.adapter:target
 
 EXPOSE 8000
 
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Shell form so ${PORT} expands at runtime. Railway/Fly/most PaaS inject PORT;
+# local and Render default to 8000 via the fallback.
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}

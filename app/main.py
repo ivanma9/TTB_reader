@@ -31,6 +31,7 @@ from app.batch_store import (
     set_row_errors,
     update_row_form_values,
 )
+from app.demo_cases import DEMO_CASES, get_demo_case
 from app.web_helpers import build_application_payload, validate_expected_data
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -91,6 +92,33 @@ async def index(request: Request) -> HTMLResponse:
             "result": None,
             "errors": {},
             "form_values": {},
+            "demo_cases": DEMO_CASES,
+            "active_demo": None,
+        },
+    )
+
+
+@app.post("/demo/{case_id}", response_class=HTMLResponse)
+async def run_demo(request: Request, case_id: str) -> HTMLResponse:
+    case = get_demo_case(case_id)
+    if case is None:
+        return HTMLResponse(status_code=404, content="Demo case not found.")
+
+    application = build_application_payload(case["form_values"])
+    result = verify_label(str(case["image_path"]), application)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="index.html",
+        context={
+            "standard_warning": STANDARD_WARNING,
+            "result": result,
+            "errors": {},
+            "form_values": case["form_values"],
+            "field_labels": FIELD_LABELS,
+            "reason_explanations": REASON_EXPLANATIONS,
+            "demo_cases": DEMO_CASES,
+            "active_demo": case_id,
         },
     )
 
@@ -141,6 +169,8 @@ async def verify(
                 "result": None,
                 "errors": errors,
                 "form_values": form_values,
+                "demo_cases": DEMO_CASES,
+                "active_demo": None,
             },
             status_code=422,
         )
@@ -185,6 +215,8 @@ async def verify(
             "form_values": form_values,
             "field_labels": FIELD_LABELS,
             "reason_explanations": REASON_EXPLANATIONS,
+            "demo_cases": DEMO_CASES,
+            "active_demo": None,
         },
     )
 

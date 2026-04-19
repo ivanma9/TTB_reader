@@ -26,6 +26,26 @@
     <span class="scope-badge">Distilled Spirits</span>
   </section>
 
+  {% if demo_cases %}
+  <div class="card demo-samples">
+    <p class="card-section-label">Try a sample</p>
+    <p class="demo-hint">Run the verifier against a pre-loaded golden-set label — no upload required.</p>
+    <div class="demo-grid">
+      {% for case_id, case in demo_cases.items() %}
+        <form method="post" action="/demo/{{ case_id }}" class="demo-card-form">
+          <button type="submit" class="demo-card{% if active_demo == case_id %} demo-card--active{% endif %}">
+            <span class="demo-card-label">{{ case.label }}</span>
+            <span class="demo-card-blurb">{{ case.blurb }}</span>
+            <span class="demo-card-verdict demo-card-verdict--{{ case.expected_verdict }}">
+              expected: {{ case.expected_verdict | replace('_', ' ') }}
+            </span>
+          </button>
+        </form>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
   <form method="post" action="/verify" enctype="multipart/form-data" id="verify-form" novalidate>
 
     <!-- Label Image card -->
