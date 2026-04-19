@@ -118,3 +118,16 @@ class TestQueueItemAction:
     def test_action_unknown_id_404(self, client):
         r = client.post("/queue/nope/action", data={"action": "approved"})
         assert r.status_code == 404
+
+
+class TestManualTestSurface:
+    def test_get_test_renders_form(self, client):
+        r = client.get("/test")
+        assert r.status_code == 200
+        assert "Test a label" in r.text
+        assert 'action="/test/verify"' in r.text
+
+    def test_post_test_verify_requires_image(self, client):
+        r = client.post("/test/verify", data={"brand_name": "X"})
+        assert r.status_code == 422
+        assert "Label image is required" in r.text

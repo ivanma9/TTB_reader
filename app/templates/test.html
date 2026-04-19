@@ -3,52 +3,36 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Compliance Auditor — Reviewer Workstation</title>
+  <title>Test a label — Compliance Auditor</title>
   <link rel="stylesheet" href="/static/workbench.css" />
 </head>
 <body>
 
-<!-- App header -->
 <header class="app-header">
   <span class="app-icon">⚖</span>
   <span class="app-title">Compliance Auditor</span>
   <nav class="app-nav">
-    <a href="/" class="nav-link nav-link--active">Single Label</a>
-    <a href="/batch" class="nav-link">Batch Review</a>
+    <a href="/" class="nav-link">Review Queue</a>
+    <a href="/test" class="nav-link nav-link--active">Test a label</a>
+    <a href="/batch" class="nav-link">Batch intake</a>
   </nav>
 </header>
 
 <main>
 
-  <!-- Page heading + scope badge -->
   <section>
-    <h1 class="page-heading">Reviewer Workstation</h1>
+    <h1 class="page-heading">Test a label</h1>
     <span class="scope-badge">Distilled Spirits</span>
+    <p class="test-hint">
+      Bring-your-own flow for evaluators. In the real TTB workflow, application
+      fields come from the applicant's COLA submission — the reviewer never
+      types them. This surface exists so you can poke the verifier at arbitrary
+      inputs.
+    </p>
   </section>
 
-  {% if demo_cases %}
-  <div class="card demo-samples">
-    <p class="card-section-label">Try a sample</p>
-    <p class="demo-hint">Run the verifier against a pre-loaded golden-set label — no upload required.</p>
-    <div class="demo-grid">
-      {% for case_id, case in demo_cases.items() %}
-        <form method="post" action="/demo/{{ case_id }}" class="demo-card-form">
-          <button type="submit" class="demo-card{% if active_demo == case_id %} demo-card--active{% endif %}">
-            <span class="demo-card-label">{{ case.label }}</span>
-            <span class="demo-card-blurb">{{ case.blurb }}</span>
-            <span class="demo-card-verdict demo-card-verdict--{{ case.expected_verdict }}">
-              expected: {{ case.expected_verdict | replace('_', ' ') }}
-            </span>
-          </button>
-        </form>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
+  <form method="post" action="/test/verify" enctype="multipart/form-data" id="verify-form" novalidate>
 
-  <form method="post" action="/verify" enctype="multipart/form-data" id="verify-form" novalidate>
-
-    <!-- Label Image card -->
     <div class="card">
       <p class="card-section-label">Label Image</p>
       <div class="upload-area" id="upload-area">
@@ -62,7 +46,6 @@
       {% endif %}
     </div>
 
-    <!-- Expected Values card -->
     <div class="card">
       <p class="card-section-label">Expected Application Data</p>
       <div class="field-group">
@@ -120,7 +103,6 @@
           {% endif %}
         </div>
 
-        <!-- Import toggle -->
         <div>
           <label class="checkbox-row">
             <input type="checkbox" id="is_import" name="is_import" value="1"
@@ -154,7 +136,6 @@
       </div>
     </div>
 
-    <!-- Primary action -->
     <button type="submit" class="btn-primary" id="submit-btn">
       <span id="btn-label">Run Verification</span>
       <span class="spinner" id="btn-spinner" style="display:none;"></span>
@@ -162,7 +143,6 @@
 
   </form>
 
-  <!-- Results card -->
   <div class="card" id="results-card">
     {% if result %}
       {% include "_result_panel.html" %}
@@ -174,7 +154,6 @@
 </main>
 
 <script>
-  // Import toggle
   function toggleImport(checked) {
     const field = document.getElementById('country-field');
     if (checked) {
@@ -184,13 +163,11 @@
     }
   }
 
-  // Filename preview
   document.getElementById('label_image').addEventListener('change', function () {
     const fn = this.files[0] ? this.files[0].name : '';
     document.getElementById('upload-filename').textContent = fn;
   });
 
-  // Loading state while request is in flight
   document.getElementById('verify-form').addEventListener('submit', function () {
     const btn = document.getElementById('submit-btn');
     const label = document.getElementById('btn-label');

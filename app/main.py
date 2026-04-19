@@ -31,7 +31,6 @@ from app.batch_store import (
     set_row_errors,
     update_row_form_values,
 )
-from app.demo_cases import DEMO_CASES, get_demo_case
 from app.queue_state import (
     ReviewerAction,
     get_item,
@@ -164,33 +163,22 @@ async def queue_item_verify(request: Request, item_id: str) -> HTMLResponse:
     )
 
 
-@app.post("/demo/{case_id}", response_class=HTMLResponse)
-async def run_demo(request: Request, case_id: str) -> HTMLResponse:
-    case = get_demo_case(case_id)
-    if case is None:
-        return HTMLResponse(status_code=404, content="Demo case not found.")
-
-    application = build_application_payload(case["form_values"])
-    result = verify_label(str(case["image_path"]), application)
-
+@app.get("/test", response_class=HTMLResponse)
+async def test_page(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         request=request,
-        name="index.html",
+        name="test.html",
         context={
             "standard_warning": STANDARD_WARNING,
-            "result": result,
+            "result": None,
             "errors": {},
-            "form_values": case["form_values"],
-            "field_labels": FIELD_LABELS,
-            "reason_explanations": REASON_EXPLANATIONS,
-            "demo_cases": DEMO_CASES,
-            "active_demo": case_id,
+            "form_values": {},
         },
     )
 
 
-@app.post("/verify", response_class=HTMLResponse)
-async def verify(
+@app.post("/test/verify", response_class=HTMLResponse)
+async def test_verify(
     request: Request,
     label_image: Annotated[Optional[UploadFile], File()] = None,
     brand_name: Annotated[str, Form()] = "",
@@ -202,13 +190,12 @@ async def verify(
     country_of_origin: Annotated[str, Form()] = "",
     government_warning: Annotated[str, Form()] = "",
 ) -> HTMLResponse:
-    # Early-reject on Content-Length if provided by the client (streaming check is authoritative)
     try:
         content_length = request.headers.get("content-length")
         if content_length and int(content_length) > MAX_UPLOAD_BYTES:
             return HTMLResponse(status_code=413, content="Upload too large (max 20 MB).")
     except ValueError:
-        pass  # bogus Content-Length; streaming check will enforce the real limit
+        pass
 
     form_values = {
         "brand_name": brand_name,
@@ -229,24 +216,20 @@ async def verify(
     if errors:
         return templates.TemplateResponse(
             request=request,
-            name="index.html",
+            name="test.html",
             context={
                 "standard_warning": STANDARD_WARNING,
                 "result": None,
                 "errors": errors,
                 "form_values": form_values,
-                "demo_cases": DEMO_CASES,
-                "active_demo": None,
             },
             status_code=422,
         )
 
-    # Whitelist extension to avoid arbitrary suffixes in /tmp
     ext = Path(label_image.filename or "").suffix.lower()
     if ext not in {".png", ".jpg", ".jpeg", ".webp"}:
         ext = ".png"
 
-    # Stream upload to temp file, enforcing the byte limit
     tmp_path: Optional[str] = None
     try:
         with tempfile.NamedTemporaryFile(suffix=ext, delete=False) as tmp:
@@ -273,7 +256,7 @@ async def verify(
 
     return templates.TemplateResponse(
         request=request,
-        name="index.html",
+        name="test.html",
         context={
             "standard_warning": STANDARD_WARNING,
             "result": result,
@@ -281,8 +264,6 @@ async def verify(
             "form_values": form_values,
             "field_labels": FIELD_LABELS,
             "reason_explanations": REASON_EXPLANATIONS,
-            "demo_cases": DEMO_CASES,
-            "active_demo": None,
         },
     )
 
