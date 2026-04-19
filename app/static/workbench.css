@@ -762,9 +762,9 @@ main {
 
 /* ── Queue table ─────────────────────────────────────── */
 
-/* Queue page uses a wider main so the table has breathing room.
-   Other pages keep the 680px column. */
-body.page--queue main { max-width: 1080px; }
+/* Queue pages (landing + item detail) use a wider main — the table and the
+   two-column label/record layout both need more horizontal room than /test. */
+body.page--queue main { max-width: 1200px; }
 
 .queue-hint {
   color: var(--on-surface-variant);
