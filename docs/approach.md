@@ -21,6 +21,23 @@ scoping, see the PRDs in [`prds/`](../prds/).
   surface low-confidence detections as `needs_review` rather than forcing
   a string.
 
+## Why queue-first
+
+The three reviewer interviews (Sarah, Dave, Jenny) describe the same flow:
+open an **existing** application, see the **already-populated** fields
+alongside the label artwork, record a decision. Reviewers never type the
+application values themselves — those come from the applicant upstream via
+COLA.
+
+The landing page was originally a single-form workbench with three demo
+cards. That framing put the reviewer in the wrong role. Queue-first moves
+the primary affordance to a list of pre-paired records and reserves the
+manual-entry form (now `/test`) as a secondary exploration surface.
+
+This is a UX decision, not a data-model change — the underlying verifier
+still takes an image path and an application payload and returns a
+structured verdict.
+
 ## Why local-first OCR and deterministic validation
 
 **Reviewers cannot trust a stochastic black box for a compliance task.** The

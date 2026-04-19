@@ -9,8 +9,10 @@ recommended action (`accept`, `manual_review`, or `request_better_image`).
 
 - **Beverage coverage:** distilled spirits only (bourbon, whiskey, tequila,
   gin, rum, vodka, scotch). Beer and wine are out of scope.
-- **Flow:** single-label reviewer workbench. A batch surface exists in the
-  repo but is not part of the reviewer-ready demo path.
+- **Flow:** single-reviewer queue — the landing page lists pre-paired
+  application+label records awaiting verification. A secondary `/test`
+  surface accepts arbitrary uploads for exploration; a `/batch` surface
+  exists in the repo but is not part of the reviewer-ready demo path.
 - **Trust posture:** the verifier never auto-approves. Low OCR confidence or
   missing evidence returns `needs_review`, not a guess.
 
@@ -18,18 +20,40 @@ recommended action (`accept`, `manual_review`, or `request_better_image`).
 
 **https://ttbreader-production.up.railway.app**
 
-Click a **Try a sample** card on the landing page — each runs the verifier
-against a pre-loaded golden-set label. No upload, no account, no setup.
-
-| Sample | Case | Expected verdict |
-|---|---|---|
-| Clean domestic match | `gs_001.png` | `match` |
-| Import with country of origin | `gs_003.png` | `match` (import rule) |
-| Needs review (occluded warning) | `gs_020.png` | `needs_review` |
-
 The deployment uses this repo's Dockerfile, built on Railway's x86_64
 infrastructure so PaddleOCR model weights are baked into the image at
 build time rather than fetched at runtime.
+
+## Guided demo path
+
+The landing page is a **review queue** — three pre-paired application+label
+records awaiting verification. For each one, a reviewer would:
+
+1. Open the application from the queue.
+2. Run verification — the verifier compares the label OCR against the
+   application record.
+3. Record an action: **Approve**, **Reject**, or **Request better image**.
+
+The three seeded items:
+
+| Application | Case | What it shows |
+|---|---|---|
+| `COLA-2026-0412-001` | Clean domestic match | Every field matches — expected verdict `match`, recommended action `Approve`. |
+| `COLA-2026-0413-027` | Import with country of origin | Exercises the import conditional rule — expected verdict `match`. |
+| `COLA-2026-0415-009` | Needs review (occluded warning) | OCR can't read the warning — expected verdict `needs_review`, recommended action `Request better image`. |
+
+Status badges persist in memory for the life of the process; restarting the
+app resets all items back to `Pending`.
+
+### Bring-your-own label
+
+For evaluators who want to poke the verifier at arbitrary inputs, the
+**Test a label** tab (top nav) keeps the manual-entry form: upload any
+label image and type the application values by hand.
+
+In production, application fields would come from COLA — reviewers would
+never type them. The `/test` surface exists only for exploration; it does
+not add items to the queue.
 
 ## Run it locally (Docker)
 
@@ -79,8 +103,9 @@ bash scripts/smoke_test.sh
 SMOKE_BASE_URL=https://<your-app>.up.railway.app bash scripts/smoke_test.sh
 ```
 
-Checks: app boot, `GET /healthz`, one seeded sample via `POST /demo/gs_001`,
-and the golden-set eval (local mode only).
+Checks: app boot, `GET /healthz`, the queue flow (`GET /`, `GET /queue/gs_001`,
+`POST /queue/gs_001/verify`, `POST /queue/gs_001/action`), `GET /test`, and the
+golden-set eval (local mode only).
 
 ## Approach and tradeoffs
 
