@@ -5,7 +5,7 @@
 #     bash scripts/smoke_test.sh
 #
 # Deployed usage (skip local boot, hit the given URL):
-#     SMOKE_BASE_URL=https://your-app.onrender.com bash scripts/smoke_test.sh
+#     SMOKE_BASE_URL=https://your-app.up.railway.app bash scripts/smoke_test.sh
 
 set -euo pipefail
 

@@ -127,7 +127,7 @@ a deployed URL for final release checks.
 bash scripts/smoke_test.sh
 
 # Deployed
-SMOKE_BASE_URL=https://<your-app>.onrender.com bash scripts/smoke_test.sh
+SMOKE_BASE_URL=https://<your-app>.up.railway.app bash scripts/smoke_test.sh
 ```
 
 The script checks: app boot, `GET /healthz`, one seeded sample submission via
@@ -167,7 +167,8 @@ this prototype.
 alc_label_verifier/    # deterministic verifier (OCR + validation rules)
 app/                   # FastAPI reviewer workbench
 evals/golden_set/      # 28-case synthetic dataset + harness
-docs/                  # approach note, PRDs, plans
+docs/                  # approach note, plans, gap analyses
+prds/                  # product requirement docs
 tests/                 # pytest suite for verifier + web layer
 scripts/               # smoke tests, model bootstrap, eval helpers
 ```
