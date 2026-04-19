@@ -35,10 +35,13 @@ from app.batch_store import (
 from app.queue_state import (
     QueueStatus,
     ReviewerAction,
+    configure_persistence,
     get_item,
     list_items,
+    load_from_disk,
     mark_complete,
     mark_in_review,
+    save_to_disk,
     seed_queue,
 )
 from app.web_helpers import build_application_payload, validate_expected_data
@@ -74,10 +77,24 @@ REASON_EXPLANATIONS = {
 }
 
 
+def init_queue_state() -> None:
+    """Seed + wire persistence based on QUEUE_PERSIST_PATH env var."""
+    persist_path = os.getenv("QUEUE_PERSIST_PATH")
+    if persist_path:
+        p = Path(persist_path)
+        configure_persistence(p)
+        load_from_disk(p)
+        if not list_items():
+            seed_queue()
+            save_to_disk(p)
+    else:
+        seed_queue()
+
+
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     warm_ocr()
-    seed_queue()
+    init_queue_state()
     yield
 
 

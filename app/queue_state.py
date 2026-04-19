@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
@@ -40,6 +42,17 @@ class QueueItem:
 
 
 _QUEUE: dict[str, QueueItem] = {}
+_PERSIST_PATH: Optional[Path] = None
+
+
+def configure_persistence(path: Optional[Path]) -> None:
+    global _PERSIST_PATH
+    _PERSIST_PATH = Path(path) if path is not None else None
+
+
+def _autosave() -> None:
+    if _PERSIST_PATH is not None:
+        save_to_disk(_PERSIST_PATH)
 
 
 _METADATA = {
@@ -85,6 +98,34 @@ def seed_queue() -> None:
         )
 
 
+def add_item(
+    *,
+    id: str,
+    application_id: str,
+    submitter: str,
+    submitted_at: datetime,
+    beverage_class: str,
+    origin_badge: str,
+    image_path: Path,
+    form_values: dict[str, str | None],
+) -> QueueItem:
+    if id in _QUEUE:
+        raise ValueError(f"{id!r} already in queue")
+    item = QueueItem(
+        id=id,
+        submitter=submitter,
+        application_id=application_id,
+        submitted_at=submitted_at,
+        beverage_class=beverage_class,
+        origin_badge=origin_badge,
+        image_path=image_path,
+        form_values=dict(form_values),
+    )
+    _QUEUE[id] = item
+    _autosave()
+    return item
+
+
 def list_items() -> list[QueueItem]:
     return list(_QUEUE.values())
 
@@ -99,6 +140,7 @@ def mark_in_review(item_id: str, verdict: dict) -> Optional[QueueItem]:
         return None
     item.status = QueueStatus.IN_REVIEW
     item.verdict = verdict
+    _autosave()
     return item
 
 
@@ -109,4 +151,62 @@ def mark_complete(item_id: str, action: ReviewerAction) -> Optional[QueueItem]:
     item.status = QueueStatus.COMPLETE
     item.reviewer_action = action
     item.completed_at = datetime.now()
+    _autosave()
     return item
+
+
+def _serialize_item(item: QueueItem) -> dict:
+    return {
+        "id": item.id,
+        "submitter": item.submitter,
+        "application_id": item.application_id,
+        "submitted_at": item.submitted_at.isoformat(),
+        "beverage_class": item.beverage_class,
+        "origin_badge": item.origin_badge,
+        "image_path": str(item.image_path),
+        "form_values": item.form_values,
+        "status": item.status.value,
+        "verdict": item.verdict,
+        "reviewer_action": item.reviewer_action.value if item.reviewer_action else None,
+        "completed_at": item.completed_at.isoformat() if item.completed_at else None,
+    }
+
+
+def _deserialize_item(raw: dict) -> QueueItem:
+    return QueueItem(
+        id=raw["id"],
+        submitter=raw["submitter"],
+        application_id=raw["application_id"],
+        submitted_at=datetime.fromisoformat(raw["submitted_at"]),
+        beverage_class=raw["beverage_class"],
+        origin_badge=raw["origin_badge"],
+        image_path=Path(raw["image_path"]),
+        form_values=raw["form_values"],
+        status=QueueStatus(raw["status"]),
+        verdict=raw.get("verdict"),
+        reviewer_action=(
+            ReviewerAction(raw["reviewer_action"]) if raw.get("reviewer_action") else None
+        ),
+        completed_at=(
+            datetime.fromisoformat(raw["completed_at"]) if raw.get("completed_at") else None
+        ),
+    )
+
+
+def save_to_disk(path: Path) -> None:
+    path = Path(path)
+    payload = {"items": [_serialize_item(item) for item in _QUEUE.values()]}
+    tmp_path = path.with_suffix(path.suffix + ".tmp")
+    tmp_path.write_text(json.dumps(payload, indent=2))
+    os.replace(tmp_path, path)
+
+
+def load_from_disk(path: Path) -> None:
+    path = Path(path)
+    if not path.exists():
+        return
+    data = json.loads(path.read_text())
+    _QUEUE.clear()
+    for raw in data.get("items", []):
+        item = _deserialize_item(raw)
+        _QUEUE[item.id] = item
