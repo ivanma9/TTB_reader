@@ -47,3 +47,24 @@ class TestQueueLanding:
         assert '/queue/gs_001' in r.text
         assert '/queue/gs_003' in r.text
         assert '/queue/gs_020' in r.text
+
+
+class TestQueueItemDetail:
+    def test_renders_application_fields_readonly(self, client):
+        r = client.get("/queue/gs_001")
+        assert r.status_code == 200
+        assert "OLD TOM DISTILLERY" in r.text
+        assert "Kentucky Straight Bourbon Whiskey" in r.text
+        assert '<input class="field-input"' not in r.text
+
+    def test_shows_image(self, client):
+        r = client.get("/queue/gs_001")
+        assert "/queue/gs_001/image" in r.text
+
+    def test_has_verify_button(self, client):
+        r = client.get("/queue/gs_001")
+        assert 'action="/queue/gs_001/verify"' in r.text
+
+    def test_unknown_id_404(self, client):
+        r = client.get("/queue/nope")
+        assert r.status_code == 404

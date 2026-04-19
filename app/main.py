@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Annotated, List, Optional
 
 from fastapi import FastAPI, File, Form, Request, UploadFile
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -32,7 +32,7 @@ from app.batch_store import (
     update_row_form_values,
 )
 from app.demo_cases import DEMO_CASES, get_demo_case
-from app.queue_state import list_items, seed_queue
+from app.queue_state import get_item, list_items, seed_queue
 from app.web_helpers import build_application_payload, validate_expected_data
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -91,6 +91,31 @@ async def queue_landing(request: Request) -> HTMLResponse:
         name="queue.html",
         context={"items": list_items()},
     )
+
+
+@app.get("/queue/{item_id}", response_class=HTMLResponse)
+async def queue_item_detail(request: Request, item_id: str) -> HTMLResponse:
+    item = get_item(item_id)
+    if item is None:
+        return HTMLResponse(status_code=404, content="Queue item not found.")
+    return templates.TemplateResponse(
+        request=request,
+        name="queue_item.html",
+        context={
+            "item": item,
+            "field_labels": FIELD_LABELS,
+            "reason_explanations": REASON_EXPLANATIONS,
+            "standard_warning": STANDARD_WARNING,
+        },
+    )
+
+
+@app.get("/queue/{item_id}/image")
+async def queue_item_image(item_id: str):
+    item = get_item(item_id)
+    if item is None:
+        return HTMLResponse(status_code=404, content="Not found.")
+    return FileResponse(path=str(item.image_path))
 
 
 @app.post("/demo/{case_id}", response_class=HTMLResponse)

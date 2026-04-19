@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ item.application_id }} — Compliance Auditor</title>
+  <link rel="stylesheet" href="/static/workbench.css" />
+</head>
+<body>
+
+<header class="app-header">
+  <span class="app-icon">⚖</span>
+  <span class="app-title">Compliance Auditor</span>
+  <nav class="app-nav">
+    <a href="/" class="nav-link">Review Queue</a>
+    <a href="/test" class="nav-link">Test a label</a>
+    <a href="/batch" class="nav-link">Batch intake</a>
+  </nav>
+</header>
+
+<main>
+  <nav class="breadcrumb"><a href="/">← Back to queue</a></nav>
+
+  <section class="item-header">
+    <h1 class="page-heading">{{ item.application_id }}</h1>
+    <div class="item-meta">
+      <span>Submitter: {{ item.submitter }}</span>
+      <span>Submitted: {{ item.submitted_at.strftime("%Y-%m-%d %H:%M") }}</span>
+      <span class="origin-badge origin-badge--{{ item.origin_badge|lower }}">
+        {{ item.origin_badge }}
+      </span>
+      {% include "_status_badge.html" %}
+    </div>
+  </section>
+
+  <div class="item-grid">
+
+    <div class="card">
+      <p class="card-section-label">Label artwork</p>
+      <img src="/queue/{{ item.id }}/image" alt="Label for {{ item.application_id }}" class="label-image" />
+    </div>
+
+    <div class="card">
+      <p class="card-section-label">Application record</p>
+      <dl class="application-record">
+        <dt>Brand Name</dt><dd>{{ item.form_values.brand_name }}</dd>
+        <dt>Class / Type</dt><dd>{{ item.form_values.class_type }}</dd>
+        <dt>Alcohol Content</dt><dd>{{ item.form_values.alcohol_content }}</dd>
+        <dt>Net Contents</dt><dd>{{ item.form_values.net_contents }}</dd>
+        <dt>Producer / Address</dt><dd>{{ item.form_values.producer_name_address }}</dd>
+        {% if item.form_values.is_import %}
+          <dt>Country of Origin</dt><dd>{{ item.form_values.country_of_origin }}</dd>
+        {% endif %}
+        <dt>Government Warning</dt><dd class="warning-text">{{ item.form_values.government_warning }}</dd>
+      </dl>
+    </div>
+  </div>
+
+  {% if not item.verdict %}
+    <form method="post" action="/queue/{{ item.id }}/verify">
+      <button type="submit" class="btn-primary">Run Verification</button>
+    </form>
+  {% endif %}
+
+  {% if item.verdict %}
+    <div class="card">
+      <p class="card-section-label">Verification result</p>
+      {% set result = item.verdict %}
+      {% include "_result_panel.html" %}
+    </div>
+
+    {% if item.status.value == "in_review" %}
+      <div class="card">
+        <p class="card-section-label">Record action</p>
+        <form method="post" action="/queue/{{ item.id }}/action" class="action-row">
+          <button type="submit" name="action" value="approved" class="btn-approve">Approve</button>
+          <button type="submit" name="action" value="rejected" class="btn-reject">Reject</button>
+          <button type="submit" name="action" value="needs_better_image" class="btn-needs-image">Request better image</button>
+        </form>
+      </div>
+    {% endif %}
+  {% endif %}
+
+</main>
+</body>
+</html>
