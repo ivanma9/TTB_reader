@@ -1,0 +1,13 @@
+{% if item.status.value == "pending" %}
+  <span class="status-badge status-badge--pending">Pending</span>
+{% elif item.status.value == "in_review" %}
+  <span class="status-badge status-badge--in-review">In review</span>
+{% elif item.status.value == "complete" and item.reviewer_action %}
+  {% if item.reviewer_action.value == "approved" %}
+    <span class="status-badge status-badge--approved">Complete · Approved</span>
+  {% elif item.reviewer_action.value == "rejected" %}
+    <span class="status-badge status-badge--rejected">Complete · Rejected</span>
+  {% elif item.reviewer_action.value == "needs_better_image" %}
+    <span class="status-badge status-badge--needs-image">Complete · Needs better image</span>
+  {% endif %}
+{% endif %}

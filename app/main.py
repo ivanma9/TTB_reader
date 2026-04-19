@@ -32,6 +32,7 @@ from app.batch_store import (
     update_row_form_values,
 )
 from app.demo_cases import DEMO_CASES, get_demo_case
+from app.queue_state import list_items, seed_queue
 from app.web_helpers import build_application_payload, validate_expected_data
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -68,6 +69,7 @@ REASON_EXPLANATIONS = {
 @asynccontextmanager
 async def lifespan(application: FastAPI):
     warm_ocr()
+    seed_queue()
     yield
 
 
@@ -83,18 +85,11 @@ def healthz() -> JSONResponse:
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request) -> HTMLResponse:
+async def queue_landing(request: Request) -> HTMLResponse:
     return templates.TemplateResponse(
         request=request,
-        name="index.html",
-        context={
-            "standard_warning": STANDARD_WARNING,
-            "result": None,
-            "errors": {},
-            "form_values": {},
-            "demo_cases": DEMO_CASES,
-            "active_demo": None,
-        },
+        name="queue.html",
+        context={"items": list_items()},
     )
 
 

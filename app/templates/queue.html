@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Review Queue — Compliance Auditor</title>
+  <link rel="stylesheet" href="/static/workbench.css" />
+</head>
+<body>
+
+<header class="app-header">
+  <span class="app-icon">⚖</span>
+  <span class="app-title">Compliance Auditor</span>
+  <nav class="app-nav">
+    <a href="/" class="nav-link nav-link--active">Review Queue</a>
+    <a href="/test" class="nav-link">Test a label</a>
+    <a href="/batch" class="nav-link">Batch intake</a>
+  </nav>
+</header>
+
+<main>
+  <section>
+    <h1 class="page-heading">Review Queue</h1>
+    <span class="scope-badge">Distilled Spirits</span>
+    <p class="queue-hint">
+      Queued applications awaiting label-to-application verification.
+      Open an application, run verification against its label, and record your action.
+    </p>
+  </section>
+
+  <div class="card">
+    <table class="queue-table">
+      <thead>
+        <tr>
+          <th>Application</th>
+          <th>Submitter</th>
+          <th>Submitted</th>
+          <th>Origin</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+          <tr class="queue-row">
+            <td class="queue-app-id">{{ item.application_id }}</td>
+            <td>{{ item.submitter }}</td>
+            <td>{{ item.submitted_at.strftime("%Y-%m-%d %H:%M") }}</td>
+            <td>
+              <span class="origin-badge origin-badge--{{ item.origin_badge|lower }}">
+                {{ item.origin_badge }}
+              </span>
+            </td>
+            <td>
+              {% include "_status_badge.html" %}
+            </td>
+            <td>
+              <a class="btn-secondary" href="/queue/{{ item.id }}">Open</a>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</main>
+
+</body>
+</html>
