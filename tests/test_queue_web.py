@@ -5,6 +5,8 @@ from datetime import datetime
 from pathlib import Path
 from unittest.mock import patch
 
+import app.main as app_main
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -164,11 +166,7 @@ class TestQueueLandingSimulateButton:
 
     def test_button_not_disabled_by_default(self, client):
         r = client.get("/")
-        # Grab the button opening tag; it should not have a disabled attribute
-        import re as _re
-        m = _re.search(r'<button[^>]*Simulate submission', r.text)
-        # Fallback: find the button tag anywhere
-        button_tag = _re.search(r'<button[^>]*>\s*\+?\s*Simulate submission', r.text)
+        button_tag = re.search(r'<button[^>]*>\s*\+?\s*Simulate submission', r.text)
         assert button_tag, "could not find simulate button in rendered HTML"
         assert "disabled" not in button_tag.group(0)
 
@@ -176,11 +174,19 @@ class TestQueueLandingSimulateButton:
         reset_queue()
         _fill_queue_from_pool()
         r = client.get("/")
-        import re as _re
-        button_tag = _re.search(r'<button[^>]*>\s*\+?\s*Simulate submission', r.text)
+        button_tag = re.search(r'<button[^>]*>\s*\+?\s*Simulate submission', r.text)
         assert button_tag, "could not find simulate button in rendered HTML"
         assert "disabled" in button_tag.group(0)
         assert "All demo cases" in r.text  # tooltip
+
+    def test_button_not_disabled_when_pool_empty(self, client, monkeypatch):
+        # If cases.jsonl fails to load POOL_CASES is {} — the button must
+        # stay enabled; the endpoint still returns 409 as defence-in-depth.
+        monkeypatch.setattr(app_main, "POOL_CASES", {})
+        r = client.get("/")
+        button_tag = re.search(r'<button[^>]*>\s*\+?\s*Simulate submission', r.text)
+        assert button_tag, "could not find simulate button in rendered HTML"
+        assert "disabled" not in button_tag.group(0)
 
 
 class TestQueueSimulate:
