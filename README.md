@@ -5,6 +5,90 @@ Reviewers upload a label image and the seven tracked application fields; the
 verifier reads the label and returns a field-by-field verdict plus a
 recommended action (`accept`, `manual_review`, or `request_better_image`).
 
+---
+
+## Quick start
+
+Everything a reviewer needs to run the app, the evals, and the smoke test.
+
+### 1. Try the hosted demo (fastest)
+
+**https://ttbreader-production.up.railway.app**
+
+No setup required. The deployment uses this repo's Dockerfile, built on
+Railway's x86_64 infrastructure so PaddleOCR model weights are baked into
+the image at build time.
+
+### 2. Run the app locally (Docker)
+
+```bash
+docker build -t alc-levels .
+docker run --rm -p 8000:8000 alc-levels
+open http://localhost:8000
+```
+
+The Dockerfile targets `linux/amd64`. On x86_64 hosts (Codespaces, cloud
+VMs, Linux CI), `docker build` bakes PaddleOCR weights into the image and
+the running container never needs network for OCR models.
+
+**On arm64 Macs,** QEMU emulation can choke on PaddleOCR's AVX2 path or
+time out fetching weights from Baidu's CDN. Two options:
+
+- Build on an x86_64 machine (Codespaces, cloud VM, CI) — recommended.
+- Skip the bootstrap and accept a one-time runtime download:
+  ```bash
+  docker build --build-arg ALLOW_MISSING_MODELS=true -t alc-levels .
+  ```
+
+### 3. Run the evals
+
+The golden set is 28 synthetic labels covering clean matches, normalization
+cases, single-field mismatches, warning strictness, unreadable cases, and
+import/domestic conditional rules.
+
+```bash
+# Harness smoke (reference target, mirrors expected outputs)
+python3 evals/run_golden_set.py
+
+# Against the real verifier
+ALC_EVAL_TARGET=alc_label_verifier.adapter:target python3 evals/run_golden_set.py
+```
+
+Dataset builder + details: [`evals/golden_set/README.md`](evals/golden_set/README.md).
+
+### 4. Smoke test
+
+`scripts/smoke_test.sh` validates the full local surface and can also be
+pointed at a deployed URL for release checks.
+
+```bash
+# Local
+bash scripts/smoke_test.sh
+
+# Deployed
+SMOKE_BASE_URL=https://<your-app>.up.railway.app bash scripts/smoke_test.sh
+```
+
+Checks: app boot, `GET /healthz`, the queue flow (`GET /`, `GET /queue/gs_001`,
+`POST /queue/gs_001/verify`, `POST /queue/gs_001/action`), `GET /test`, and the
+golden-set eval (local mode only).
+
+### 5. (Optional) Persist the queue across restarts
+
+By default the queue is in-memory and resets on process restart. To persist
+across restarts, set `QUEUE_PERSIST_PATH` to a writable JSON file path:
+
+```bash
+QUEUE_PERSIST_PATH=/data/queue.json uvicorn app.main:app
+```
+
+On Railway, pair this with a mounted volume so the file survives redeploys;
+otherwise it lives in ephemeral container storage and is wiped per deploy.
+If the file is missing at boot the queue re-seeds with the three defaults;
+if it's malformed the app logs a warning and re-seeds rather than crashing.
+
+---
+
 ## Scope
 
 - **Beverage coverage:** distilled spirits only (bourbon, whiskey, tequila,
@@ -16,15 +100,9 @@ recommended action (`accept`, `manual_review`, or `request_better_image`).
 - **Trust posture:** the verifier never auto-approves. Low OCR confidence or
   missing evidence returns `needs_review`, not a guess.
 
-## Try the deployed demo
+---
 
-**https://ttbreader-production.up.railway.app**
-
-The deployment uses this repo's Dockerfile, built on Railway's x86_64
-infrastructure so PaddleOCR model weights are baked into the image at
-build time rather than fetched at runtime.
-
-## Guided demo path
+## Demo walkthrough
 
 The landing page is a **review queue** — three pre-paired application+label
 records awaiting verification. For each one, a reviewer would:
@@ -54,20 +132,6 @@ button disables itself once all 28 are queued. This is a demo affordance
 only — in production, applications arrive from COLA upstream; reviewers
 never create them.
 
-### Persisting the queue across restarts
-
-By default the queue is in-memory and resets on process restart. To persist
-across restarts, set `QUEUE_PERSIST_PATH` to a writable JSON file path:
-
-```bash
-QUEUE_PERSIST_PATH=/data/queue.json uvicorn app.main:app
-```
-
-On Railway, pair this with a mounted volume so the file survives redeploys;
-otherwise it lives in ephemeral container storage and is wiped per deploy.
-If the file is missing at boot the queue re-seeds with the three defaults;
-if it's malformed the app logs a warning and re-seeds rather than crashing.
-
 ### Bring-your-own label
 
 For evaluators who want to poke the verifier at arbitrary inputs, the
@@ -78,63 +142,42 @@ In production, application fields would come from COLA — reviewers would
 never type them. The `/test` surface exists only for exploration; it does
 not add items to the queue.
 
-## Run it locally (Docker)
+---
 
-```bash
-docker build -t alc-levels .
-docker run --rm -p 8000:8000 alc-levels
-open http://localhost:8000
-```
+## Approach, tools, assumptions
 
-The Dockerfile targets `linux/amd64`. On x86_64 hosts (Railway, GitHub
-Actions, any Linux CI), `docker build` bakes PaddleOCR weights into the
-image and the running container never needs network for OCR models.
-
-**On arm64 Macs,** QEMU emulation can choke on PaddleOCR's AVX2 path or
-time out fetching weights from Baidu's CDN. Two options:
-
-- Build on an x86_64 machine (Codespaces, cloud VM, CI) — recommended.
-- Skip the bootstrap and accept a one-time runtime download:
-  `docker build --build-arg ALLOW_MISSING_MODELS=true -t alc-levels .`
-
-## Running the evals
-
-The golden set is 28 synthetic labels: clean matches, normalization cases,
-single-field mismatches, warning strictness, unreadable cases, and
-import/domestic conditional rules.
-
-```bash
-# Harness smoke (reference target, mirrors expected outputs)
-python3 evals/run_golden_set.py
-
-# Against the real verifier
-ALC_EVAL_TARGET=alc_label_verifier.adapter:target python3 evals/run_golden_set.py
-```
-
-Details and the dataset builder: [`evals/golden_set/README.md`](evals/golden_set/README.md).
-
-## Smoke test
-
-`scripts/smoke_test.sh` validates the full local surface and can be pointed
-at a deployed URL for release checks.
-
-```bash
-# Local
-bash scripts/smoke_test.sh
-
-# Deployed
-SMOKE_BASE_URL=https://<your-app>.up.railway.app bash scripts/smoke_test.sh
-```
-
-Checks: app boot, `GET /healthz`, the queue flow (`GET /`, `GET /queue/gs_001`,
-`POST /queue/gs_001/verify`, `POST /queue/gs_001/action`), `GET /test`, and the
-golden-set eval (local mode only).
-
-## Approach and tradeoffs
-
-See [`docs/approach.md`](docs/approach.md) for the design rationale: why
+**Approach** — `docs/approach.md` covers the design rationale: why
 local-first OCR with deterministic validation, why `needs_review` is a
 first-class verdict, and what is intentionally out of scope.
+`docs/tradeoffs.md` is a 18-decision breakdown (chosen / rejected / why /
+what it costs us / what stays open), including the stakeholder asks from
+the take-home brief and how each one was or wasn't addressed.
+
+**Tools used**
+
+- **Python 3.11** — runtime.
+- **PaddleOCR PP-OCRv5 mobile** (CPU, local) — text extraction. Weights
+  baked into the container at build time; no runtime model fetch in the
+  happy path.
+- **FastAPI 0.111+** + **Jinja2** — web layer (reviewer queue,
+  `/test` surface, `/batch` surface).
+- **rapidfuzz** — bounded fuzzy matching inside the deterministic
+  validation rules.
+- **pytest** — test suite (verifier + web).
+- **Docker** (`linux/amd64`) — single-container deployment; Railway
+  hosts the demo.
+
+Everything runs locally inside the container. No hosted inference APIs,
+no external model endpoints, no outbound network calls on the
+verification path.
+
+**Assumptions** — `presearch.md` captures the up-front options considered,
+the locked Day-1 decisions, and the explicit **Assumptions** the prototype
+is built on: manual application values (no COLA ingest), distilled-spirits
+scope, user-supplied test labels, and evaluator tolerance for documented
+limitations on advanced typography checks and image-quality extremes.
+
+---
 
 ## Known limitations
 
@@ -168,6 +211,12 @@ scripts/               # smoke tests, model bootstrap, eval helpers
 
 ## Docs
 
-- [Approach note](docs/approach.md)
-- [PRDs](prds/)
-- [Golden set README](evals/golden_set/README.md)
+- [Approach note](docs/approach.md) — architecture, why queue-first, why
+  `needs_review` is first-class
+- [Tradeoffs](docs/tradeoffs.md) — 18 decisions with why / cost / what
+  stays open
+- [Presearch](presearch.md) — options considered, locked decisions,
+  explicit assumptions
+- [PRDs](prds/) — per-milestone product requirements
+- [Golden set README](evals/golden_set/README.md) — eval dataset +
+  harness
