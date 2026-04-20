@@ -15,6 +15,6 @@ This folder breaks the final product into milestone-sized PRDs instead of one ov
 - Ship only if stable: M3.
 
 ## Why This Ordering
-- `presearch.md` makes clear that a working core experience matters more than breadth.
+- `docs/presearch.md` makes clear that a working core experience matters more than breadth.
 - The existing golden-set evals already give us a measurable quality bar for the distilled-spirits MVP.
 - Batch is important, but it should expand a stable core rather than compete with it.

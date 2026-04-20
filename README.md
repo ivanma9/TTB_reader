@@ -171,11 +171,12 @@ Everything runs locally inside the container. No hosted inference APIs,
 no external model endpoints, no outbound network calls on the
 verification path.
 
-**Assumptions** — `presearch.md` captures the up-front options considered,
-the locked Day-1 decisions, and the explicit **Assumptions** the prototype
-is built on: manual application values (no COLA ingest), distilled-spirits
-scope, user-supplied test labels, and evaluator tolerance for documented
-limitations on advanced typography checks and image-quality extremes.
+**Assumptions** — [`docs/presearch.md`](docs/presearch.md) captures the
+up-front options considered, the locked Day-1 decisions, and the explicit
+**Assumptions** the prototype is built on: manual application values (no
+COLA ingest), distilled-spirits scope, user-supplied test labels, and
+evaluator tolerance for documented limitations on advanced typography
+checks and image-quality extremes.
 
 ---
 
@@ -213,10 +214,14 @@ scripts/               # smoke tests, model bootstrap, eval helpers
 
 - [Approach note](docs/approach.md) — architecture, why queue-first, why
   `needs_review` is first-class
-- [Tradeoffs](docs/tradeoffs.md) — 18 decisions with why / cost / what
-  stays open
-- [Presearch](presearch.md) — options considered, locked decisions,
+- [Tradeoffs](docs/tradeoffs.md) — decisions with why / cost / what stays
+  open, including stakeholder asks from the take-home brief
+- [Presearch](docs/presearch.md) — options considered, locked decisions,
   explicit assumptions
+- [Estimation and milestones](docs/estimation-milestones.md) — WBS and
+  milestone exit criteria
+- [Take-home brief](docs/take-home-brief.docx) — original stakeholder
+  interviews + requirements
 - [PRDs](prds/) — per-milestone product requirements
 - [Golden set README](evals/golden_set/README.md) — eval dataset +
   harness

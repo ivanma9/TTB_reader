@@ -2,9 +2,9 @@
 
 The reasoning behind the prototype's major decisions — what was chosen,
 what was rejected, what it costs, and which stakeholder concerns or
-research findings drove the call. Synthesized from `presearch.md`,
-`docs/approach.md`, `docs/m1-gaps.md`, `docs/real-label-gaps.md`, and the
-plans under `docs/plans/`.
+research findings drove the call. Synthesized from
+`docs/presearch.md`, `docs/approach.md`, `docs/m1-gaps.md`,
+`docs/real-label-gaps.md`, and the plans under `docs/plans/`.
 
 ---
 
@@ -424,7 +424,7 @@ demonstrating the verification approach, not a production deployment.
 
 ## Source documents
 
-- `presearch.md` — problem framing, constraints, options considered,
+- `docs/presearch.md` — problem framing, constraints, options considered,
   Day-1 locked decisions
 - `docs/approach.md` — current architecture narrative, queue-first
   rationale, explicit non-goals
