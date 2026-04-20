@@ -218,8 +218,6 @@ scripts/               # smoke tests, model bootstrap, eval helpers
   open, including stakeholder asks from the take-home brief
 - [Presearch](docs/presearch.md) — options considered, locked decisions,
   explicit assumptions
-- [Estimation and milestones](docs/estimation-milestones.md) — WBS and
-  milestone exit criteria
 - [Take-home brief](docs/take-home-brief.docx) — original stakeholder
   interviews + requirements
 - [PRDs](prds/) — per-milestone product requirements

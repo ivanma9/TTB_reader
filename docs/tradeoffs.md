@@ -3,8 +3,8 @@
 The reasoning behind the prototype's major decisions — what was chosen,
 what was rejected, what it costs, and which stakeholder concerns or
 research findings drove the call. Synthesized from
-`docs/presearch.md`, `docs/approach.md`, `docs/m1-gaps.md`,
-`docs/real-label-gaps.md`, and the plans under `docs/plans/`.
+`docs/presearch.md`, `docs/approach.md`, `docs/m1-gaps.md`, and
+`docs/real-label-gaps.md`.
 
 ---
 
@@ -432,18 +432,3 @@ demonstrating the verification approach, not a production deployment.
   synthetic gate
 - `docs/real-label-gaps.md` — synthetic-vs-real accuracy gap + per-field
   failure modes that drove Categories A / B / C
-- `docs/plans/2026-04-16-m2-single-label-reviewer.md` — single-label
-  workbench scope
-- `docs/plans/2026-04-16-m3-batch-review-beta.md` — batch workflow
-  scope and locked beta decisions
-- `docs/plans/2026-04-16-m4-submission-and-reviewer-readiness.md` —
-  deployment + submission packaging
-- `docs/plans/2026-04-17-real-label-category-a.md` — matcher fixes for
-  `net_contents`, `brand_name`, `country_of_origin`
-- `docs/plans/2026-04-17-real-label-category-b.md` — front+back image
-  contract
-- `docs/plans/2026-04-17-real-label-category-c.md` — hand-labeled
-  class/producer truth
-- `docs/plans/2026-04-19-reviewer-queue-landing.md` — queue-first UX
-- `docs/plans/2026-04-19-simulate-cola-submission.md` — simulate
-  affordance and opt-in persistence

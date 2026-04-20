@@ -146,15 +146,14 @@ New per-field counts (43 cases, 17 imports / 26 domestic):
   "hecho en" and handling the city/country comma pattern.
 
 **C — country genuinely absent from front-label OCR (back label required,
-deferred to Category B, see
-`docs/plans/2026-04-17-real-label-category-b.md`):**
+deferred to the Category B front+back-image work):**
 - `ttb_18113001000679` (Japan) — front has 4 OCR lines; no country.
 - `ttb_18046001000056`, `ttb_18291001000107`, `ttb_18043001000147`
   (France) — Cognac/Armagnac front labels never say "France".
 
 ### Ship criteria met
 
-Plan targets (`docs/plans/2026-04-17-real-label-category-a.md`):
+Category A plan targets:
 - `net_contents` ≥ 20/43 → **22/43** ✓
 - `brand_name` ≥ 20/43 → **22/43** ✓
 - `country_of_origin` ≥ 3/25* → **3/17 imports** ✓
@@ -167,8 +166,7 @@ imports + 26 domestic = 43 cases.
 ## Category C residuals (2026-04-18)
 
 Hand-labeled 6 cases (target was 20; partial pass) via
-`scripts/label_real_cases` per
-`docs/plans/2026-04-17-real-label-category-c.md`. After merging
+`scripts/label_real_cases` during the Category C pass. After merging
 `evals/real_labels/corrections.jsonl` through the adapter, the
 labeled-subset scoring is:
 
