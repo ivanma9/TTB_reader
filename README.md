@@ -149,9 +149,9 @@ not add items to the queue.
 **Approach** — `docs/approach.md` covers the design rationale: why
 local-first OCR with deterministic validation, why `needs_review` is a
 first-class verdict, and what is intentionally out of scope.
-`docs/tradeoffs.md` is a 18-decision breakdown (chosen / rejected / why /
-what it costs us / what stays open), including the stakeholder asks from
-the take-home brief and how each one was or wasn't addressed.
+`docs/tradeoffs.md` is an 18-decision breakdown (chosen / rejected / why
+/ what it costs us / what stays open), including the stakeholder asks
+from the take-home brief and how each one was or wasn't addressed.
 
 **Tools used**
 
@@ -204,7 +204,7 @@ checks and image-quality extremes.
 alc_label_verifier/    # deterministic verifier (OCR + validation rules)
 app/                   # FastAPI reviewer workbench
 evals/golden_set/      # 28-case synthetic dataset + harness
-docs/                  # approach note, plans, gap analyses
+docs/                  # approach, tradeoffs, presearch, gap analyses
 prds/                  # product requirement docs
 tests/                 # pytest suite for verifier + web layer
 scripts/               # smoke tests, model bootstrap, eval helpers
@@ -218,8 +218,8 @@ scripts/               # smoke tests, model bootstrap, eval helpers
   open, including stakeholder asks from the take-home brief
 - [Presearch](docs/presearch.md) — options considered, locked decisions,
   explicit assumptions
-- [Take-home brief](docs/take-home-brief.docx) — original stakeholder
-  interviews + requirements
+- [Real-label gaps](docs/real-label-gaps.md) — 43-case synthetic-vs-real
+  accuracy analysis + per-field failure modes
 - [PRDs](prds/) — per-milestone product requirements
 - [Golden set README](evals/golden_set/README.md) — eval dataset +
   harness
